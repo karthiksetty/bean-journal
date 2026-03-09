@@ -1,5 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  "https://uumvzroswrgqmaeoqajc.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1bXZ6cm9zd3JncW1hZW9xYWpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODAwMDksImV4cCI6MjA4ODY1NjAwOX0.IPfyrSTzVa8gVjAj1wk8KUwDd19_RzBonXOLXxofw0I"
+);
 
 const INITIAL_BEANS = [
   { id: 1,  name: "Finca Milán",                    variety: ["Caturra"],                                        brand: "Pure Pastry",        myRating: 4,  aroma: ["Vanilla","Lime","Iced Tea"],                              region: ["Risaralda, Colombia"],                     process: "Co-fermented",          bean: "Arabica", producer: "",                          notes: "Can be strong, need to create the right recipe" },
@@ -382,6 +388,7 @@ function DetailModal({ bean, onClose, onEdit, onDelete }) {
 
 export default function BeanDatabase() {
   const [beans, setBeans] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [processFilter, setProcessFilter] = useState("All");
   const [regionFilter, setRegionFilter] = useState("All");
@@ -389,21 +396,60 @@ export default function BeanDatabase() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editBean, setEditBean] = useState(null);
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("bean-journal");
-      setBeans(stored ? JSON.parse(stored) : INITIAL_BEANS);
-    } catch { setBeans(INITIAL_BEANS); }
-  }, []);
+  useEffect(() => { fetchBeans(); }, []);
 
-  const save = (updated) => {
-    setBeans(updated);
-    try { localStorage.setItem("bean-journal", JSON.stringify(updated)); } catch {}
+  const fetchBeans = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("beans").select("*").order("created_at", { ascending: true });
+    if (!error) setBeans(data.map(dbToBean));
+    setLoading(false);
   };
 
-  const handleDelete = (id) => {
-    save(beans.filter(b => b.id !== id));
-    setSelectedBean(null);
+  // Convert DB row (snake_case) to app bean (camelCase)
+  const dbToBean = (row) => ({
+    id: row.id,
+    name: row.name,
+    brand: row.brand || "",
+    producer: row.producer || "",
+    region: row.region || [],
+    variety: row.variety || [],
+    process: row.process || "",
+    bean: row.bean || "Arabica",
+    aroma: row.aroma || [],
+    myRating: row.my_rating || 0,
+    notes: row.notes || "",
+  });
+
+  // Convert app bean to DB row
+  const beanToDb = (bean) => ({
+    name: bean.name,
+    brand: bean.brand,
+    producer: bean.producer,
+    region: bean.region,
+    variety: bean.variety,
+    process: bean.process,
+    bean: bean.bean,
+    aroma: bean.aroma,
+    my_rating: bean.myRating,
+    notes: bean.notes,
+  });
+
+  const handleAdd = async (bean) => {
+    const { data, error } = await supabase.from("beans").insert([beanToDb(bean)]).select().single();
+    if (!error) setBeans(prev => [...prev, dbToBean(data)]);
+  };
+
+  const handleEdit = async (bean) => {
+    const { error } = await supabase.from("beans").update(beanToDb(bean)).eq("id", bean.id);
+    if (!error) setBeans(prev => prev.map(b => b.id === bean.id ? bean : b));
+  };
+
+  const handleDelete = async (id) => {
+    const { error } = await supabase.from("beans").delete().eq("id", id);
+    if (!error) {
+      setBeans(prev => prev.filter(b => b.id !== id));
+      setSelectedBean(null);
+    }
   };
 
   const allProcesses = ["All", ...new Set(beans.map(b => b.process).filter(Boolean))];
@@ -472,7 +518,9 @@ export default function BeanDatabase() {
 
         {/* Grid */}
         <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "32px 40px" }}>
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "80px 0", color: "#A0896B", fontFamily: "'DM Sans', sans-serif" }}>Loading your beans…</div>
+          ) : filtered.length === 0 ? (
             <div style={{ textAlign: "center", padding: "80px 0", color: "#A0896B", fontFamily: "'DM Sans', sans-serif" }}>
               {beans.length === 0 ? "No beans yet — add your first one!" : "No beans match your search"}
             </div>
@@ -505,7 +553,7 @@ export default function BeanDatabase() {
         <AddBeanModal
           editBean={editBean}
           onClose={() => { setShowAddForm(false); setEditBean(null); }}
-          onSave={bean => save(editBean ? beans.map(b => b.id === bean.id ? bean : b) : [...beans, bean])}
+          onSave={bean => { if (editBean) handleEdit(bean); else handleAdd(bean); }}
         />
       )}
     </>
