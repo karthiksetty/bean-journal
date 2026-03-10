@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" fill="none">
+  <!-- Background circle -->
+  <circle cx="90" cy="90" r="90" fill="#2C1810"/>
+  <!-- Coffee bean shape -->
+  <ellipse cx="90" cy="90" rx="45" ry="62" fill="#C4A882"/>
+  <!-- Center crease -->
+  <path d="M90 28 Q68 56 68 90 Q68 124 90 152" stroke="#2C1810" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <path d="M90 28 Q112 56 112 90 Q112 124 90 152" stroke="#2C1810" stroke-width="10" stroke-linecap="round" fill="none"/>
+</svg>
