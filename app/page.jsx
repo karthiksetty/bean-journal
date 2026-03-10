@@ -493,51 +493,65 @@ export default function BeanDatabase() {
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #D4C4B0; border-radius: 3px; }
         input:focus { border-color: #C4A882 !important; box-shadow: 0 0 0 3px rgba(196,168,130,0.15); }
+        .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+        @media (max-width: 640px) {
+          .header-wrap { padding: 14px 16px 12px !important; }
+          .header-title { font-size: 20px !important; }
+          .bean-count { display: none !important; }
+          .find-btn { padding: 8px 10px !important; font-size: 12px !important; gap: 4px !important; }
+          .signin-btn { padding: 8px 12px !important; font-size: 12px !important; }
+          .add-btn { padding: 8px 12px !important; font-size: 12px !important; gap: 4px !important; }
+          .signout-btn { padding: 8px 10px !important; font-size: 12px !important; }
+          .filter-row { flex-wrap: nowrap !important; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
+          .filter-row::-webkit-scrollbar { display: none; }
+          .filter-row button { white-space: nowrap; flex-shrink: 0; }
+          .search-area { gap: 8px !important; }
+        }
       `}</style>
 
       <div style={{ minHeight: "100vh", background: "#FAF7F2" }}>
         {/* Header */}
-        <div style={{ background: "#FEFCF8", borderBottom: "1px solid #EDE5D8", padding: "32px 40px 24px", position: "sticky", top: 0, zIndex: 10 }}>
+        <div className="header-wrap" style={{ background: "#FEFCF8", borderBottom: "1px solid #EDE5D8", padding: "32px 40px 24px", position: "sticky", top: 0, zIndex: 10 }}>
           <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
-                <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#2C1810", fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>Bean Journal</h1>
-                <span style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif" }}>{beans.length} beans</span>
+                <h1 className="header-title" style={{ fontSize: "28px", fontWeight: "700", color: "#2C1810", fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>Bean Journal</h1>
+                <span className="bean-count" style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif" }}>{beans.length} beans</span>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <a href="/recommend"
-                  style={{ padding: "10px 18px", background: "#F5EAD8", border: "none", borderRadius: "12px", color: "#8B4F1E", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}
+                <a href="/recommend" className="find-btn"
+                  style={{ padding: "10px 18px", background: "#F5EAD8", border: "none", borderRadius: "12px", color: "#8B4F1E", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#EDD8BB"}
                   onMouseLeave={e => e.currentTarget.style.background = "#F5EAD8"}
                 >✨ Find My Bean</a>
                 {session ? (
                   <>
-                    <button onClick={() => setShowAddForm(true)}
-                      style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", background: "#2C1810", border: "none", borderRadius: "12px", color: "#FAF7F2", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
+                    <button onClick={() => setShowAddForm(true)} className="add-btn"
+                      style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", background: "#2C1810", border: "none", borderRadius: "12px", color: "#FAF7F2", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" }}
                       onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
                       onMouseLeave={e => e.currentTarget.style.opacity = "1"}
                     ><span style={{ fontSize: "16px" }}>+</span> Add Bean</button>
-                    <button onClick={() => supabase.auth.signOut()}
-                      style={{ padding: "10px 16px", background: "transparent", border: "1px solid #EDE5D8", borderRadius: "12px", color: "#A0896B", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
+                    <button onClick={() => supabase.auth.signOut()} className="signout-btn"
+                      style={{ padding: "10px 16px", background: "transparent", border: "1px solid #EDE5D8", borderRadius: "12px", color: "#A0896B", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" }}
                       onMouseEnter={e => e.currentTarget.style.borderColor = "#C4A882"}
                       onMouseLeave={e => e.currentTarget.style.borderColor = "#EDE5D8"}
                     >Sign out</button>
                   </>
                 ) : (
-                  <a href="/login"
-                    style={{ padding: "10px 20px", background: "transparent", border: "1px solid #EDE5D8", borderRadius: "12px", color: "#6B5039", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}
+                  <a href="/login" className="signin-btn"
+                    style={{ padding: "10px 20px", background: "transparent", border: "1px solid #EDE5D8", borderRadius: "12px", color: "#6B5039", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", whiteSpace: "nowrap" }}
                   >Sign in</a>
                 )}
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+            <div className="search-area" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search beans, regions, varieties, flavours…"
-                style={{ flex: "1", minWidth: "200px", padding: "10px 16px", border: "1px solid #EDE5D8", borderRadius: "12px", background: "#FAF7F2", fontSize: "13px", color: "#2C1810", fontFamily: "'DM Sans', sans-serif", outline: "none" }} />
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                style={{ width: "100%", padding: "10px 16px", border: "1px solid #EDE5D8", borderRadius: "12px", background: "#FAF7F2", fontSize: "13px", color: "#2C1810", fontFamily: "'DM Sans', sans-serif", outline: "none" }} />
+              <div className="filter-row">
                 {allProcesses.map(p => <button key={p} onClick={() => setProcessFilter(p)} style={{ padding: "8px 14px", borderRadius: "20px", border: "1px solid", borderColor: processFilter === p ? "#2C1810" : "#EDE5D8", background: processFilter === p ? "#2C1810" : "transparent", color: processFilter === p ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>{p}</button>)}
               </div>
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              <div className="filter-row">
                 {REGION_FILTERS.map(r => <button key={r} onClick={() => setRegionFilter(r)} style={{ padding: "8px 14px", borderRadius: "20px", border: "1px solid", borderColor: regionFilter === r ? "#C4A882" : "#EDE5D8", background: regionFilter === r ? "#C4A882" : "transparent", color: regionFilter === r ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>{r}</button>)}
               </div>
             </div>
