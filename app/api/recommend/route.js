@@ -46,7 +46,6 @@ export async function POST(request) {
         const messageStream = client.messages.stream({
           model: "claude-opus-4-6",
           max_tokens: 1024,
-          thinking: { type: "adaptive" },
           system: `You are a passionate coffee sommelier helping someone choose the perfect bean from a personal collection.
 You have deep knowledge of flavor profiles, processing methods, and how coffee characteristics match different moods and times of day.
 
@@ -56,8 +55,9 @@ BEAN: <exact bean name from the collection>
 Then a blank line, then your recommendation text.
 
 Be warm, specific, and enthusiastic. Keep your recommendation focused — pick 1 bean only.
-After the BEAN: line, write 2–4 sentences explaining why this bean is perfect for their current mood.
-End with a one-line brewing tip.
+The recommendation MUST genuinely match the user's stated time of day, flavor mood, and intensity — different inputs should lead to different beans.
+After the BEAN: line, write 2–4 sentences explaining why this specific bean fits their exact preferences right now.
+End with a one-line brewing tip tailored to the bean.
 Use plain text, no markdown, no bullet points — write as if speaking to a friend.`,
           messages: [
             {
