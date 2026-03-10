@@ -505,6 +505,11 @@ export default function BeanDatabase() {
                 <span style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif" }}>{beans.length} beans</span>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <a href="/recommend"
+                  style={{ padding: "10px 18px", background: "#F5EAD8", border: "none", borderRadius: "12px", color: "#8B4F1E", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#EDD8BB"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#F5EAD8"}
+                >✨ Find My Bean</a>
                 {session ? (
                   <>
                     <button onClick={() => setShowAddForm(true)}
