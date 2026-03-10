@@ -312,7 +312,7 @@ function AddBeanModal({ onClose, onSave, editBean }) {
   );
 }
 
-function DetailModal({ bean, onClose, onEdit, onDelete }) {
+function DetailModal({ bean, onClose, onEdit, onDelete, canEdit }) {
   if (!bean) return null;
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(44,24,16,0.4)", backdropFilter: "blur(4px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
@@ -377,10 +377,12 @@ function DetailModal({ bean, onClose, onEdit, onDelete }) {
           </div>
         )}
 
-        <div style={{ display: "flex", gap: "8px", borderTop: "1px solid #EDE5D8", paddingTop: "20px" }}>
-          <button onClick={() => { onEdit(bean); onClose(); }} style={{ flex: 1, padding: "10px", border: "1px solid #EDE5D8", borderRadius: "10px", background: "transparent", color: "#6B5039", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>✏️ Edit</button>
-          <button onClick={() => { if (confirm(`Delete "${bean.name}"?`)) onDelete(bean.id); }} style={{ flex: 1, padding: "10px", border: "1px solid #FECACA", borderRadius: "10px", background: "transparent", color: "#DC2626", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>🗑️ Delete</button>
-        </div>
+        {canEdit && (
+          <div style={{ display: "flex", gap: "8px", borderTop: "1px solid #EDE5D8", paddingTop: "20px" }}>
+            <button onClick={() => { onEdit(bean); onClose(); }} style={{ flex: 1, padding: "10px", border: "1px solid #EDE5D8", borderRadius: "10px", background: "transparent", color: "#6B5039", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>✏️ Edit</button>
+            <button onClick={() => { if (confirm(`Delete "${bean.name}"?`)) onDelete(bean.id); }} style={{ flex: 1, padding: "10px", border: "1px solid #FECACA", borderRadius: "10px", background: "transparent", color: "#DC2626", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>🗑️ Delete</button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -395,8 +397,14 @@ export default function BeanDatabase() {
   const [selectedBean, setSelectedBean] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editBean, setEditBean] = useState(null);
+  const [session, setSession] = useState(null);
 
-  useEffect(() => { fetchBeans(); }, []);
+  useEffect(() => {
+    fetchBeans();
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
+    return () => subscription.unsubscribe();
+  }, []);
 
   const fetchBeans = async () => {
     setLoading(true);
@@ -496,11 +504,26 @@ export default function BeanDatabase() {
                 <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#2C1810", fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>Bean Journal</h1>
                 <span style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif" }}>{beans.length} beans</span>
               </div>
-              <button onClick={() => setShowAddForm(true)}
-                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", background: "#2C1810", border: "none", borderRadius: "12px", color: "#FAF7F2", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
-                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-              ><span style={{ fontSize: "16px" }}>+</span> Add Bean</button>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                {session ? (
+                  <>
+                    <button onClick={() => setShowAddForm(true)}
+                      style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", background: "#2C1810", border: "none", borderRadius: "12px", color: "#FAF7F2", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+                      onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                    ><span style={{ fontSize: "16px" }}>+</span> Add Bean</button>
+                    <button onClick={() => supabase.auth.signOut()}
+                      style={{ padding: "10px 16px", background: "transparent", border: "1px solid #EDE5D8", borderRadius: "12px", color: "#A0896B", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
+                      onMouseEnter={e => e.currentTarget.style.borderColor = "#C4A882"}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = "#EDE5D8"}
+                    >Sign out</button>
+                  </>
+                ) : (
+                  <a href="/login"
+                    style={{ padding: "10px 20px", background: "transparent", border: "1px solid #EDE5D8", borderRadius: "12px", color: "#6B5039", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", textDecoration: "none" }}
+                  >Sign in</a>
+                )}
+              </div>
             </div>
 
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
@@ -548,7 +571,7 @@ export default function BeanDatabase() {
         </div>
       </div>
 
-      <DetailModal bean={selectedBean} onClose={() => setSelectedBean(null)} onEdit={bean => setEditBean(bean)} onDelete={handleDelete} />
+      <DetailModal bean={selectedBean} onClose={() => setSelectedBean(null)} onEdit={bean => setEditBean(bean)} onDelete={handleDelete} canEdit={!!session} />
       {(showAddForm || editBean) && (
         <AddBeanModal
           editBean={editBean}
