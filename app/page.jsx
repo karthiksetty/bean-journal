@@ -313,6 +313,37 @@ function AddBeanModal({ onClose, onSave, editBean }) {
 }
 
 function DetailModal({ bean, onClose, onEdit, onDelete, canEdit }) {
+  const [facts, setFacts] = useState("");
+  const [factsLoading, setFactsLoading] = useState(false);
+  const [factsDone, setFactsDone] = useState(false);
+
+  async function fetchFacts() {
+    if (factsLoading || facts) return;
+    setFactsLoading(true);
+    setFacts("");
+    setFactsDone(false);
+    try {
+      const res = await fetch("/api/bean-facts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bean }),
+      });
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      setFactsLoading(false);
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        setFacts(prev => prev + decoder.decode(value, { stream: true }));
+      }
+      setFactsDone(true);
+    } catch {
+      setFactsLoading(false);
+      setFacts("Couldn't load facts. Try again.");
+      setFactsDone(true);
+    }
+  }
+
   if (!bean) return null;
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(44,24,16,0.4)", backdropFilter: "blur(4px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
@@ -377,8 +408,34 @@ function DetailModal({ bean, onClose, onEdit, onDelete, canEdit }) {
           </div>
         )}
 
+        {/* Bean Facts */}
+        <div style={{ borderTop: "1px solid #EDE5D8", paddingTop: "20px", marginBottom: canEdit ? "16px" : "0" }}>
+          {!facts && !factsLoading && (
+            <button onClick={fetchFacts}
+              style={{ width: "100%", padding: "11px", background: "#F5EAD8", border: "none", borderRadius: "12px", color: "#8B4F1E", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "background 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#EDD8BB"}
+              onMouseLeave={e => e.currentTarget.style.background = "#F5EAD8"}
+            >✨ Discover Facts</button>
+          )}
+          {factsLoading && (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#A0896B", fontSize: "13px", fontFamily: "'DM Sans', sans-serif", padding: "4px 0" }}>
+              <span style={{ display: "inline-block", width: "16px", height: "16px", border: "2px solid #EDE5D8", borderTopColor: "#C4A882", borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
+              Looking up facts…
+            </div>
+          )}
+          {facts && (
+            <div style={{ background: "#F9F4EC", borderRadius: "12px", padding: "16px" }}>
+              <p style={{ margin: "0 0 10px", fontSize: "11px", color: "#A0896B", fontFamily: "'DM Sans', sans-serif", textTransform: "uppercase", letterSpacing: "0.06em" }}>✨ Bean Facts</p>
+              <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.75, color: "#2C1810", fontFamily: "'DM Sans', sans-serif", whiteSpace: "pre-wrap" }}>
+                {facts}
+                {!factsDone && <span style={{ display: "inline-block", width: "2px", height: "13px", background: "#C4A882", marginLeft: "2px", verticalAlign: "middle", animation: "blink 0.8s step-end infinite" }} />}
+              </p>
+            </div>
+          )}
+        </div>
+
         {canEdit && (
-          <div style={{ display: "flex", gap: "8px", borderTop: "1px solid #EDE5D8", paddingTop: "20px" }}>
+          <div style={{ display: "flex", gap: "8px", borderTop: "1px solid #EDE5D8", paddingTop: "16px" }}>
             <button onClick={() => { onEdit(bean); onClose(); }} style={{ flex: 1, padding: "10px", border: "1px solid #EDE5D8", borderRadius: "10px", background: "transparent", color: "#6B5039", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>✏️ Edit</button>
             <button onClick={() => { if (confirm(`Delete "${bean.name}"?`)) onDelete(bean.id); }} style={{ flex: 1, padding: "10px", border: "1px solid #FECACA", borderRadius: "10px", background: "transparent", color: "#DC2626", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>🗑️ Delete</button>
           </div>
@@ -493,6 +550,8 @@ export default function BeanDatabase() {
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #D4C4B0; border-radius: 3px; }
         input:focus { border-color: #C4A882 !important; box-shadow: 0 0 0 3px rgba(196,168,130,0.15); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
         .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
         @media (max-width: 640px) {
           .header-wrap { padding: 14px 16px 12px !important; }
