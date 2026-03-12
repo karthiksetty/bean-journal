@@ -22,7 +22,7 @@ const INITIAL_BEANS = [
   { id: 12, name: "Sakami Kenya",                    variety: ["SL-28","Ruiru 11","Batian"],                      brand: "Hoppenworth & Ploch",myRating: 0,  aroma: ["Sweet Cherry","Orange","Lime","Wine Gum"],                region: ["Kenya"],                                  process: "Natural",               bean: "Arabica", producer: "",                          notes: "Harvest: Sept–Dec 2024" },
 ];
 
-const EMPTY_FORM = { name: "", variety: [], varietyInput: "", brand: "", myRating: 0, aroma: "", region: [], regionInput: "", process: "", bean: "Arabica", producer: "", notes: "" };
+const EMPTY_FORM = { name: "", variety: [], varietyInput: "", brand: "", myRating: 0, aroma: "", region: [], regionInput: "", process: "", bean: "Arabica", producer: "", notes: "", available: true };
 
 function CupRating({ value, onChange, interactive = false }) {
   const [hovered, setHovered] = useState(null);
@@ -148,13 +148,17 @@ function TagInput({ value, onChange, placeholder, inputVal, onInputChange }) {
 
 function BeanCard({ bean, onClick }) {
   const accentColor = (processColors[bean.process] || { dot: "#C4A882" }).dot;
+  const unavailable = bean.available === false;
   return (
     <div onClick={() => onClick(bean)}
-      style={{ background: "#FEFCF8", border: "1px solid #EDE5D8", borderRadius: "16px", padding: "24px", cursor: "pointer", transition: "all 0.2s ease", position: "relative", overflow: "hidden" }}
-      onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(44,24,16,0.08)"; e.currentTarget.style.borderColor = "#C4A882"; }}
+      style={{ background: "#FEFCF8", border: "1px solid #EDE5D8", borderRadius: "16px", padding: "24px", cursor: "pointer", transition: "all 0.2s ease", position: "relative", overflow: "hidden", opacity: unavailable ? 0.5 : 1, filter: unavailable ? "grayscale(70%)" : "none" }}
+      onMouseEnter={e => { if (!unavailable) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(44,24,16,0.08)"; e.currentTarget.style.borderColor = "#C4A882"; } }}
       onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "#EDE5D8"; }}
     >
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: accentColor, borderRadius: "16px 16px 0 0" }} />
+      {unavailable && (
+        <div style={{ position: "absolute", top: "12px", right: "12px", background: "#EBEBEB", color: "#888", fontSize: "10px", fontWeight: "600", padding: "3px 8px", borderRadius: "8px", fontFamily: "'DM Sans', sans-serif", textTransform: "uppercase", letterSpacing: "0.06em" }}>Ran out</div>
+      )}
       <div style={{ marginBottom: "12px" }}>
         <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "#2C1810", fontFamily: "'Playfair Display', serif", lineHeight: "1.3", marginBottom: "4px" }}>{bean.name}</h3>
         <p style={{ margin: 0, fontSize: "12px", color: "#A0896B", fontFamily: "'DM Sans', sans-serif" }}>
@@ -197,7 +201,7 @@ const inputStyle = { width: "100%", padding: "10px 14px", border: "1px solid #ED
 
 function AddBeanModal({ onClose, onSave, editBean }) {
   const [form, setForm] = useState(editBean
-    ? { ...editBean, aroma: editBean.aroma.join(", "), myRating: editBean.myRating ?? 0, varietyInput: "", regionInput: "" }
+    ? { ...editBean, aroma: editBean.aroma.join(", "), myRating: editBean.myRating ?? 0, varietyInput: "", regionInput: "", available: editBean.available !== false }
     : EMPTY_FORM
   );
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -215,6 +219,7 @@ function AddBeanModal({ onClose, onSave, editBean }) {
       aroma: form.aroma ? form.aroma.split(",").map(s => s.trim()).filter(Boolean) : [],
       myRating: form.myRating ?? 0,
       notes: form.notes,
+      available: form.available !== false,
     });
     onClose();
   };
@@ -303,6 +308,19 @@ function AddBeanModal({ onClose, onSave, editBean }) {
           </div>
         </div>
 
+          {/* Availability */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", border: "1px solid #EDE5D8", borderRadius: "10px", background: "#FAF7F2" }}>
+            <div>
+              <p style={{ margin: 0, fontSize: "13px", color: "#2C1810", fontFamily: "'DM Sans', sans-serif", fontWeight: "500" }}>In my collection</p>
+              <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#A0896B", fontFamily: "'DM Sans', sans-serif" }}>Toggle off if you've run out</p>
+            </div>
+            <button type="button" onClick={() => set("available", !form.available)}
+              style={{ width: "44px", height: "24px", borderRadius: "12px", border: "none", cursor: "pointer", background: form.available ? "#2C1810" : "#D1D5DB", position: "relative", transition: "background 0.2s", flexShrink: 0 }}
+            >
+              <span style={{ position: "absolute", top: "2px", left: form.available ? "22px" : "2px", width: "20px", height: "20px", borderRadius: "50%", background: "white", transition: "left 0.2s", display: "block" }} />
+            </button>
+          </div>
+
         <div style={{ display: "flex", gap: "10px", marginTop: "28px" }}>
           <button onClick={onClose} style={{ flex: 1, padding: "12px", border: "1px solid #EDE5D8", borderRadius: "12px", background: "transparent", color: "#6B5039", fontSize: "14px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Cancel</button>
           <button onClick={handleSave} style={{ flex: 2, padding: "12px", border: "none", borderRadius: "12px", background: "#2C1810", color: "#FAF7F2", fontSize: "14px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>{editBean ? "Save Changes" : "Add Bean"}</button>
@@ -312,7 +330,7 @@ function AddBeanModal({ onClose, onSave, editBean }) {
   );
 }
 
-function DetailModal({ bean, onClose, onEdit, onDelete, canEdit }) {
+function DetailModal({ bean, onClose, onEdit, onDelete, onToggleAvailability, canEdit }) {
   const [facts, setFacts] = useState("");
   const [factsLoading, setFactsLoading] = useState(false);
   const [factsDone, setFactsDone] = useState(false);
@@ -361,6 +379,9 @@ function DetailModal({ bean, onClose, onEdit, onDelete, canEdit }) {
         <div style={{ display: "flex", gap: "10px", marginBottom: "24px", flexWrap: "wrap", alignItems: "center" }}>
           <ProcessBadge process={bean.process} />
           {bean.myRating > 0 && <CupRating value={bean.myRating} />}
+          {bean.available === false && (
+            <span style={{ background: "#EBEBEB", color: "#777", padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "600", fontFamily: "'DM Sans', sans-serif", textTransform: "uppercase", letterSpacing: "0.05em" }}>Ran out</span>
+          )}
         </div>
 
         {/* Region */}
@@ -435,9 +456,15 @@ function DetailModal({ bean, onClose, onEdit, onDelete, canEdit }) {
         </div>
 
         {canEdit && (
-          <div style={{ display: "flex", gap: "8px", borderTop: "1px solid #EDE5D8", paddingTop: "16px" }}>
-            <button onClick={() => { onEdit(bean); onClose(); }} style={{ flex: 1, padding: "10px", border: "1px solid #EDE5D8", borderRadius: "10px", background: "transparent", color: "#6B5039", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>✏️ Edit</button>
-            <button onClick={() => { if (confirm(`Delete "${bean.name}"?`)) onDelete(bean.id); }} style={{ flex: 1, padding: "10px", border: "1px solid #FECACA", borderRadius: "10px", background: "transparent", color: "#DC2626", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>🗑️ Delete</button>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", borderTop: "1px solid #EDE5D8", paddingTop: "16px" }}>
+            <button
+              onClick={() => onToggleAvailability(bean)}
+              style={{ width: "100%", padding: "10px", border: "1px solid", borderColor: bean.available === false ? "#BBF7D0" : "#EDE5D8", borderRadius: "10px", background: bean.available === false ? "#F0FDF4" : "transparent", color: bean.available === false ? "#166534" : "#6B5039", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}
+            >{bean.available === false ? "✅ Back in Stock" : "☕ Mark as Ran Out"}</button>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button onClick={() => { onEdit(bean); onClose(); }} style={{ flex: 1, padding: "10px", border: "1px solid #EDE5D8", borderRadius: "10px", background: "transparent", color: "#6B5039", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>✏️ Edit</button>
+              <button onClick={() => { if (confirm(`Delete "${bean.name}"?`)) onDelete(bean.id); }} style={{ flex: 1, padding: "10px", border: "1px solid #FECACA", borderRadius: "10px", background: "transparent", color: "#DC2626", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>🗑️ Delete</button>
+            </div>
           </div>
         )}
       </div>
@@ -483,6 +510,7 @@ export default function BeanDatabase() {
     aroma: row.aroma || [],
     myRating: row.my_rating || 0,
     notes: row.notes || "",
+    available: row.available !== false,
   });
 
   // Convert app bean to DB row
@@ -497,6 +525,7 @@ export default function BeanDatabase() {
     aroma: bean.aroma,
     my_rating: bean.myRating,
     notes: bean.notes,
+    available: bean.available !== false,
   });
 
   const handleAdd = async (bean) => {
@@ -514,6 +543,16 @@ export default function BeanDatabase() {
     if (!error) {
       setBeans(prev => prev.filter(b => b.id !== id));
       setSelectedBean(null);
+    }
+  };
+
+  const handleToggleAvailability = async (bean) => {
+    const newAvailable = bean.available === false;
+    const { error } = await supabase.from("beans").update({ available: newAvailable }).eq("id", bean.id);
+    if (!error) {
+      const updated = { ...bean, available: newAvailable };
+      setBeans(prev => prev.map(b => b.id === bean.id ? updated : b));
+      setSelectedBean(updated);
     }
   };
 
@@ -649,7 +688,7 @@ export default function BeanDatabase() {
         </div>
       </div>
 
-      <DetailModal bean={selectedBean} onClose={() => setSelectedBean(null)} onEdit={bean => setEditBean(bean)} onDelete={handleDelete} canEdit={!!session} />
+      <DetailModal bean={selectedBean} onClose={() => setSelectedBean(null)} onEdit={bean => setEditBean(bean)} onDelete={handleDelete} onToggleAvailability={handleToggleAvailability} canEdit={!!session} />
       {(showAddForm || editBean) && (
         <AddBeanModal
           editBean={editBean}

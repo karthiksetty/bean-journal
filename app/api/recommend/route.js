@@ -9,9 +9,9 @@ const supabase = createClient(
 export async function POST(request) {
   const { timeOfDay, flavorMood, intensity } = await request.json();
 
-  const { data: beans, error } = await supabase
+  const { data: allBeans, error } = await supabase
     .from("beans")
-    .select("name, brand, producer, region, variety, process, bean, aroma, my_rating, notes");
+    .select("name, brand, producer, region, variety, process, bean, aroma, my_rating, notes, available");
 
   if (error) {
     return new Response(JSON.stringify({ error: "Failed to fetch beans" }), {
@@ -19,6 +19,9 @@ export async function POST(request) {
       headers: { "Content-Type": "application/json" },
     });
   }
+
+  // Only recommend beans that are in stock
+  const beans = allBeans.filter(b => b.available !== false);
 
   const beanList = beans
     .map((b) => {
