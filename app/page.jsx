@@ -146,9 +146,28 @@ function TagInput({ value, onChange, placeholder, inputVal, onInputChange }) {
   );
 }
 
-function BeanCard({ bean, onClick }) {
+function lastDrunkLabel(days) {
+  if (days === null) return null;
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  return `${days}d ago`;
+}
+
+function BeanCard({ bean, onClick, drinkLog, onLog }) {
+  const [logFlash, setLogFlash] = useState(false);
   const accentColor = (processColors[bean.process] || { dot: "#C4A882" }).dot;
   const unavailable = bean.available === false;
+
+  const handleLog = (e) => {
+    e.stopPropagation();
+    onLog(bean.id);
+    setLogFlash(true);
+    setTimeout(() => setLogFlash(false), 1200);
+  };
+
+  const lastDays = drinkLog?.lastDays ?? null;
+  const totalCups = drinkLog?.count ?? 0;
+
   return (
     <div onClick={() => onClick(bean)}
       style={{ background: "#FEFCF8", border: "1px solid #EDE5D8", borderRadius: "16px", padding: "24px", cursor: "pointer", transition: "all 0.2s ease", position: "relative", overflow: "hidden", opacity: unavailable ? 0.5 : 1, filter: unavailable ? "grayscale(70%)" : "none" }}
@@ -191,6 +210,19 @@ function BeanCard({ bean, onClick }) {
         {bean.myRating > 0
           ? <CupRating value={bean.myRating} />
           : <span style={{ color: "#C4B99A", fontSize: "12px", fontFamily: "'DM Sans', sans-serif" }}>Not rated</span>}
+      </div>
+      {/* Log row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "12px", paddingTop: "10px", borderTop: "1px solid #F0EAE0" }}>
+        <div style={{ fontSize: "11px", fontFamily: "'DM Sans', sans-serif", color: lastDays === null ? "#C4B99A" : lastDays <= 1 ? "#2e7d32" : lastDays <= 5 ? "#b07800" : "#aaa" }}>
+          {lastDays === null ? "Never logged" : (
+            <><span style={{ marginRight: 4 }}>●</span>{lastDrunkLabel(lastDays)}{totalCups > 0 ? ` · ${totalCups} cup${totalCups !== 1 ? "s" : ""}` : ""}</>
+          )}
+        </div>
+        <button
+          onClick={handleLog}
+          title="Log a cup"
+          style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid #EDE5D8", background: logFlash ? "#2C1810" : "#FAF7F2", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
+        >{logFlash ? "✓" : "☕"}</button>
       </div>
     </div>
   );
@@ -483,12 +515,41 @@ export default function BeanDatabase() {
   const [editBean, setEditBean] = useState(null);
   const [session, setSession] = useState(null);
 
+  const [drinkLogs, setDrinkLogs] = useState({}); // { beanId: { count, lastDays } }
+
   useEffect(() => {
     fetchBeans();
+    fetchDrinkLogs();
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchDrinkLogs = async () => {
+    const { data, error } = await supabase.from("drink_logs").select("bean_id, logged_at").order("logged_at", { ascending: false });
+    if (error || !data) return;
+    const map = {};
+    const today = new Date(); today.setHours(0,0,0,0);
+    for (const row of data) {
+      const id = row.bean_id;
+      if (!map[id]) {
+        const d = new Date(row.logged_at); d.setHours(0,0,0,0);
+        const days = Math.round((today - d) / 86400000);
+        map[id] = { count: 0, lastDays: days };
+      }
+      map[id].count++;
+    }
+    setDrinkLogs(map);
+  };
+
+  const logCup = async (beanId) => {
+    const { error } = await supabase.from("drink_logs").insert({ bean_id: beanId });
+    if (error) return;
+    setDrinkLogs(prev => {
+      const existing = prev[beanId];
+      return { ...prev, [beanId]: { count: (existing?.count ?? 0) + 1, lastDays: 0 } };
+    });
+  };
 
   const fetchBeans = async () => {
     setLoading(true);
@@ -617,6 +678,11 @@ export default function BeanDatabase() {
                 <span className="bean-count" style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif" }}>{beans.length} beans</span>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <a href="/stats" className="find-btn"
+                  style={{ padding: "10px 18px", background: "#F0EAE0", border: "none", borderRadius: "12px", color: "#6B5039", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#E5D8C8"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#F0EAE0"}
+                >📊 Stats</a>
                 <a href="/recommend" className="find-btn"
                   style={{ padding: "10px 18px", background: "#F5EAD8", border: "none", borderRadius: "12px", color: "#8B4F1E", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#EDD8BB"}
@@ -666,7 +732,7 @@ export default function BeanDatabase() {
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
-              {filtered.map(bean => <BeanCard key={bean.id} bean={bean} onClick={setSelectedBean} />)}
+              {filtered.map(bean => <BeanCard key={bean.id} bean={bean} onClick={setSelectedBean} drinkLog={drinkLogs[bean.id]} onLog={logCup} />)}
             </div>
           )}
 
