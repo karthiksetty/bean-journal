@@ -59,7 +59,6 @@ const processColors = {
   "Osmotic Dehydration":      { bg: "#E6EEF5", text: "#2D5A7A", dot: "#2D5A7A" },  // muted slate blue
 };
 
-const REGION_FILTERS = ["All", "Colombia", "Kenya", "Ethiopia", "Mexico", "Peru"];
 
 // Aroma colour categories
 const AROMA_CATEGORIES = [
@@ -618,6 +617,9 @@ export default function BeanDatabase() {
   };
 
   const allProcesses = ["All", ...new Set(beans.map(b => b.process).filter(Boolean))];
+  const allRegions = ["All", ...[...new Set(
+    beans.flatMap(b => b.region.map(r => r.split(",").at(-1).trim()))
+  )].filter(Boolean).sort()];
 
   const filtered = beans.filter(b => {
     const matchSearch = !search
@@ -631,14 +633,7 @@ export default function BeanDatabase() {
     return matchSearch && matchProcess && matchRegion;
   });
 
-  const uniqueCountries = new Set(beans.flatMap(b => b.region.map(r => {
-    if (r.includes("Colombia")) return "Colombia";
-    if (r.includes("Kenya")) return "Kenya";
-    if (r.includes("Ethiopia")) return "Ethiopia";
-    if (r.includes("Mexico")) return "Mexico";
-    if (r.includes("Peru")) return "Peru";
-    return r;
-  })));
+  const uniqueCountries = new Set(beans.flatMap(b => b.region.map(r => r.split(",").at(-1).trim())).filter(Boolean));
 
   return (
     <>
@@ -716,7 +711,7 @@ export default function BeanDatabase() {
                 {allProcesses.map(p => <button key={p} onClick={() => setProcessFilter(p)} style={{ padding: "8px 14px", borderRadius: "20px", border: "1px solid", borderColor: processFilter === p ? "#2C1810" : "#EDE5D8", background: processFilter === p ? "#2C1810" : "transparent", color: processFilter === p ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>{p}</button>)}
               </div>
               <div className="filter-row">
-                {REGION_FILTERS.map(r => <button key={r} onClick={() => setRegionFilter(r)} style={{ padding: "8px 14px", borderRadius: "20px", border: "1px solid", borderColor: regionFilter === r ? "#C4A882" : "#EDE5D8", background: regionFilter === r ? "#C4A882" : "transparent", color: regionFilter === r ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>{r}</button>)}
+                {allRegions.map(r => <button key={r} onClick={() => setRegionFilter(r)} style={{ padding: "8px 14px", borderRadius: "20px", border: "1px solid", borderColor: regionFilter === r ? "#C4A882" : "#EDE5D8", background: regionFilter === r ? "#C4A882" : "transparent", color: regionFilter === r ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>{r}</button>)}
               </div>
             </div>
           </div>
