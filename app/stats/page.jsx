@@ -82,7 +82,8 @@ export default function StatsPage() {
 
   // ── Summary ────────────────────────────────────────────────────────────────
   const cupsThisMonth = logs.filter(l => new Date(l.logged_at) >= startOfMonth).length;
-  const beansTriedEver = new Set(logs.map(l => l.bean_id)).size;
+  const daysElapsed = Math.max(1, today.getDate());
+  const avgPerDay = (cupsThisMonth / daysElapsed).toFixed(1);
 
   // Favourite bean (all-time most logged)
   const allCountMap = {};
@@ -91,17 +92,6 @@ export default function StatsPage() {
   const favBeanName = favEntry ? (beanMap[favEntry[0]]?.name ?? "—") : "—";
   // Shorten long names for the tile
   const favShort = favBeanName.length > 16 ? favBeanName.split(" ").slice(0, 2).join(" ") : favBeanName;
-
-  // Streak
-  const logDays = new Set(logs.map(l => toLocalDateStr(l.logged_at)));
-  let streak = 0;
-  const check = new Date(today);
-  while (true) {
-    const key = `${check.getFullYear()}-${String(check.getMonth()+1).padStart(2,"0")}-${String(check.getDate()).padStart(2,"0")}`;
-    if (!logDays.has(key)) break;
-    streak++;
-    check.setDate(check.getDate() - 1);
-  }
 
   // ── Heatmap ────────────────────────────────────────────────────────────────
   const WEEKS = 14;
@@ -242,14 +232,23 @@ export default function StatsPage() {
         <div style={{ maxWidth: "680px", margin: "0 auto", padding: "28px 20px 60px" }}>
 
           {/* ── Summary tiles ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
             {[
-              { label: "Cups this month", value: cupsThisMonth },
-              { label: "Beans tried", value: `${beansTriedEver} of ${beans.length}` },
-              { label: "Favourite", value: favShort },
-              { label: "Day streak", value: streak > 0 ? `${streak} 🔥` : "—" },
+              {
+                label: "Cups this month", value: cupsThisMonth,
+                icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4A882" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>,
+              },
+              {
+                label: "Avg / day", value: avgPerDay,
+                icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4A882" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+              },
+              {
+                label: "Favourite", value: favShort,
+                icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4A882" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
+              },
             ].map(s => (
               <div key={s.label} style={{ background: "#fff", borderRadius: 14, padding: "14px 10px", border: "1px solid #EDE5D8", textAlign: "center" }}>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}>{s.icon}</div>
                 <div style={{ fontSize: s.label === "Favourite" ? 13 : 22, fontWeight: 700, fontFamily: "'Playfair Display', serif", lineHeight: 1.2, wordBreak: "break-word" }}>{s.value}</div>
                 <div style={{ fontSize: 10, color: "#A0896B", marginTop: 5 }}>{s.label}</div>
               </div>
@@ -304,37 +303,6 @@ export default function StatsPage() {
               ))}
               <span style={{ fontSize: 10, color: "#A0896B" }}>2</span>
             </div>
-          </div>
-
-          {/* ── Most Drunk ── */}
-          <div style={card}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <div style={cardTitle}>Most Drunk</div>
-              <div style={{ display: "flex", gap: 6 }}>
-                {["month", "all time"].map(r => (
-                  <button key={r} onClick={() => setRange(r)} style={{
-                    padding: "3px 10px", borderRadius: 12, border: "1px solid #EDE5D8", cursor: "pointer",
-                    background: range === r ? "#2C1810" : "transparent",
-                    color: range === r ? "#fff" : "#A0896B", fontSize: 11, fontFamily: "'DM Sans', sans-serif"
-                  }}>{r}</button>
-                ))}
-              </div>
-            </div>
-            {ranked.length === 0 ? (
-              <div style={{ color: "#C4B99A", fontSize: 13, textAlign: "center", padding: "16px 0" }}>No cups logged {range === "month" ? "this month" : "yet"}</div>
-            ) : ranked.map((row, i) => (
-              <div key={row.bean.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: i < ranked.length - 1 ? 10 : 0 }}>
-                <div style={{ width: 18, fontSize: 12, color: "#C4B99A", textAlign: "right", flexShrink: 0 }}>{i + 1}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.bean.name}</div>
-                  <div style={{ fontSize: 11, color: "#A0896B" }}>{row.bean.brand}</div>
-                </div>
-                <div style={{ width: 80, height: 6, background: "#F0EAE0", borderRadius: 3, flexShrink: 0 }}>
-                  <div style={{ width: `${(row.count / maxCount) * 100}%`, height: "100%", background: "#C4A882", borderRadius: 3 }} />
-                </div>
-                <div style={{ fontSize: 12, color: "#888", width: 24, textAlign: "right", flexShrink: 0 }}>{row.count}</div>
-              </div>
-            ))}
           </div>
 
           {/* ── Process Breakdown ── */}
@@ -393,6 +361,37 @@ export default function StatsPage() {
               </div>
             </div>
           )}
+
+          {/* ── Most Drunk ── */}
+          <div style={card}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={cardTitle}>Most Drunk</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {["month", "all time"].map(r => (
+                  <button key={r} onClick={() => setRange(r)} style={{
+                    padding: "3px 10px", borderRadius: 12, border: "1px solid #EDE5D8", cursor: "pointer",
+                    background: range === r ? "#2C1810" : "transparent",
+                    color: range === r ? "#fff" : "#A0896B", fontSize: 11, fontFamily: "'DM Sans', sans-serif"
+                  }}>{r}</button>
+                ))}
+              </div>
+            </div>
+            {ranked.length === 0 ? (
+              <div style={{ color: "#C4B99A", fontSize: 13, textAlign: "center", padding: "16px 0" }}>No cups logged {range === "month" ? "this month" : "yet"}</div>
+            ) : ranked.map((row, i) => (
+              <div key={row.bean.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: i < ranked.length - 1 ? 10 : 0 }}>
+                <div style={{ width: 18, fontSize: 12, color: "#C4B99A", textAlign: "right", flexShrink: 0 }}>{i + 1}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.bean.name}</div>
+                  <div style={{ fontSize: 11, color: "#A0896B" }}>{row.bean.brand}</div>
+                </div>
+                <div style={{ width: 80, height: 6, background: "#F0EAE0", borderRadius: 3, flexShrink: 0 }}>
+                  <div style={{ width: `${(row.count / maxCount) * 100}%`, height: "100%", background: "#C4A882", borderRadius: 3 }} />
+                </div>
+                <div style={{ fontSize: 12, color: "#888", width: 24, textAlign: "right", flexShrink: 0 }}>{row.count}</div>
+              </div>
+            ))}
+          </div>
 
           {/* ── Neglected Beans ── */}
           {neglected.length > 0 && (
