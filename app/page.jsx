@@ -366,6 +366,12 @@ function DetailModal({ bean, onClose, onEdit, onDelete, onToggleAvailability, ca
   const [factsLoading, setFactsLoading] = useState(false);
   const [factsDone, setFactsDone] = useState(false);
 
+  useEffect(() => {
+    setFacts("");
+    setFactsLoading(false);
+    setFactsDone(false);
+  }, [bean?.id]);
+
   async function fetchFacts() {
     if (factsLoading || facts) return;
     setFactsLoading(true);
