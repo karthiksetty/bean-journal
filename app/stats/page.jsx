@@ -103,12 +103,9 @@ export default function StatsPage() {
     cupsPerDay[k] = (cupsPerDay[k] || 0) + 1;
   }
   // Build grid: array of WEEKS columns, each with 7 days
-  // Start on the Monday of the week (WEEKS*7 - 1) days ago
+  // Grid ends today, starts (WEEKS*7 - 1) days ago
   const gridStart = new Date(today);
   gridStart.setDate(today.getDate() - (heatmapDays - 1));
-  // Align to Monday
-  const dayOfWeek = (gridStart.getDay() + 6) % 7; // 0=Mon
-  gridStart.setDate(gridStart.getDate() - dayOfWeek);
 
   const grid = []; // array of columns (weeks), each column has 7 day objects
   let monthLabels = []; // { col, label }
