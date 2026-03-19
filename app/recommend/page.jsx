@@ -297,6 +297,7 @@ export default function RecommendPage() {
               step={step}
               totalSteps={STEPS.length}
               currentStep={currentStep}
+              selected={answers[currentStep.id]}
               onSelect={selectOption}
               onBack={step > 0 ? () => setStep(step - 1) : null}
             />
@@ -307,7 +308,7 @@ export default function RecommendPage() {
   );
 }
 
-function QuizStep({ step, totalSteps, currentStep, onSelect, onBack }) {
+function QuizStep({ step, totalSteps, currentStep, selected, onSelect, onBack }) {
   return (
     <div style={{ animation: "fadeIn 0.25s ease" }}>
       {/* Step dots */}
@@ -325,17 +326,20 @@ function QuizStep({ step, totalSteps, currentStep, onSelect, onBack }) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: currentStep.options.length === 3 ? "1fr 1fr 1fr" : "1fr 1fr", gap: "12px", marginBottom: "28px" }}>
-        {currentStep.options.map(opt => (
+        {currentStep.options.map(opt => {
+          const isSelected = selected === opt.value;
+          return (
           <button key={opt.value} onClick={() => onSelect(opt.value)}
-            style={{ background: "#FEFCF8", border: "1.5px solid #EDE5D8", borderRadius: "16px", padding: "20px 16px", cursor: "pointer", textAlign: "center", transition: "all 0.15s ease", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}
+            style={{ background: isSelected ? "#FDF8F0" : "#FEFCF8", border: `1.5px solid ${isSelected ? "#C4A882" : "#EDE5D8"}`, borderRadius: "16px", padding: "20px 16px", cursor: "pointer", textAlign: "center", transition: "all 0.15s ease", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", boxShadow: isSelected ? "0 4px 16px rgba(44,24,16,0.08)" : "none" }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = "#C4A882"; e.currentTarget.style.background = "#FDF8F0"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(44,24,16,0.08)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "#EDE5D8"; e.currentTarget.style.background = "#FEFCF8"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = isSelected ? "#C4A882" : "#EDE5D8"; e.currentTarget.style.background = isSelected ? "#FDF8F0" : "#FEFCF8"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = isSelected ? "0 4px 16px rgba(44,24,16,0.08)" : "none"; }}
           >
             <span style={{ fontSize: "28px", lineHeight: 1 }}>{opt.icon}</span>
             <span style={{ fontSize: "14px", fontWeight: 600, color: "#2C1810", lineHeight: 1.2 }}>{opt.label}</span>
             <span style={{ fontSize: "12px", color: "#9B8B7A", lineHeight: 1.3 }}>{opt.sub}</span>
           </button>
-        ))}
+          );
+        })}
       </div>
 
       {onBack && (
