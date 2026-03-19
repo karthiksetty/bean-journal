@@ -155,9 +155,17 @@ const STEPS = [
   },
 ];
 
+function defaultTimeOfDay() {
+  const h = new Date().getHours();
+  if (h < 9) return "Early morning (before 9am)";
+  if (h < 12) return "Morning (9am–12pm)";
+  if (h < 17) return "Afternoon (12pm–5pm)";
+  return "Evening (after 5pm)";
+}
+
 export default function RecommendPage() {
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState({});
+  const [answers, setAnswers] = useState({ timeOfDay: defaultTimeOfDay() });
   const [loading, setLoading] = useState(false);
   const [recommendedBean, setRecommendedBean] = useState(null);
   const [text, setText] = useState("");
