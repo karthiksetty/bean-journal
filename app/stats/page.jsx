@@ -49,9 +49,8 @@ function daysBetween(date) {
 
 function cupColor(cups) {
   if (cups === 0) return "#F0EAE0";
-  if (cups === 1) return "#D4B896";
-  if (cups === 2) return "#C4A882";
-  if (cups === 3) return "#6B4226";
+  if (cups === 1) return "#C4A882";
+  if (cups === 2) return "#6B4226";
   return "#2C1810";
 }
 
@@ -297,7 +296,7 @@ export default function StatsPage() {
             {/* Legend */}
             <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 10, justifyContent: "flex-end" }}>
               <span style={{ fontSize: 10, color: "#A0896B" }}>0</span>
-              {["#F0EAE0", "#D4B896", "#C4A882", "#6B4226", "#2C1810"].map((bg, i) => (
+              {["#F0EAE0", "#C4A882", "#6B4226", "#2C1810"].map((bg, i) => (
                 <div key={i} style={{ width: 13, height: 13, borderRadius: 2, background: bg }} />
               ))}
               <span style={{ fontSize: 10, color: "#A0896B" }}>3+</span>
