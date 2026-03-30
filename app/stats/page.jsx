@@ -62,7 +62,7 @@ export default function StatsPage() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from("beans").select("id, name, brand, process, region, aroma"),
+      supabase.from("beans").select("id, name, brand, process, region, aroma, available"),
       supabase.from("drink_logs").select("bean_id, logged_at").order("logged_at", { ascending: false }),
     ]).then(([{ data: beanData }, { data: logData }]) => {
       setBeans(beanData || []);
@@ -191,6 +191,7 @@ export default function StatsPage() {
     if (!lastDrunkMap[l.bean_id]) lastDrunkMap[l.bean_id] = l.logged_at;
   }
   const neglected = beans
+    .filter(b => b.available !== false)
     .map(b => ({ bean: b, lastDays: lastDrunkMap[b.id] ? daysBetween(lastDrunkMap[b.id]) : null }))
     .filter(x => x.lastDays === null || x.lastDays >= 7)
     .sort((a, b) => (b.lastDays ?? 999) - (a.lastDays ?? 999));
