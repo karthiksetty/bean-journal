@@ -269,29 +269,29 @@ export default function StatsPage() {
 
             <div style={{ display: "flex" }}>
               {/* Day labels */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 3, marginRight: 6, paddingTop: 20 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginRight: 6, paddingTop: 20 }}>
                 {["M", "", "W", "", "F", "", "S"].map((d, i) => (
-                  <div key={i} style={{ fontSize: 10, color: "#A0896B", height: 16, lineHeight: "16px", width: 10, textAlign: "right" }}>{d}</div>
+                  <div key={i} style={{ fontSize: 10, color: "#A0896B", height: 18, lineHeight: "18px", width: 10, textAlign: "right" }}>{d}</div>
                 ))}
               </div>
 
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ flex: 1, minWidth: 0, overflowX: "auto" }}>
                 {/* Month labels */}
-                <div style={{ display: "flex", marginBottom: 4, height: 16, position: "relative" }}>
+                <div style={{ display: "flex", marginBottom: 4, height: 16, position: "relative", minWidth: WEEKS * 22 }}>
                   {monthLabels.map(({ col, label }) => (
-                    <div key={label} style={{ position: "absolute", left: `${(col / WEEKS) * 100}%`, fontSize: 10, color: "#A0896B" }}>{label}</div>
+                    <div key={label} style={{ position: "absolute", left: col * 22, fontSize: 10, color: "#A0896B" }}>{label}</div>
                   ))}
                 </div>
 
                 {/* Grid */}
-                <div style={{ display: "flex", gap: 3 }}>
+                <div style={{ display: "flex", gap: 4 }}>
                   {grid.map((col, w) => (
-                    <div key={w} style={{ display: "flex", flexDirection: "column", gap: 3, flex: 1 }}>
+                    <div key={w} style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
                       {col.map((cell, d) => (
                         <div
                           key={d}
                           title={cell.isFuture ? "" : `${cell.date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}: ${cell.cups} cup${cell.cups !== 1 ? "s" : ""}`}
-                          style={{ aspectRatio: "1", borderRadius: 3, background: cell.isFuture ? "transparent" : cupColor(cell.cups) }}
+                          style={{ width: 18, height: 18, borderRadius: 4, background: cell.isFuture ? "transparent" : cupColor(cell.cups) }}
                         />
                       ))}
                     </div>
