@@ -96,17 +96,16 @@ export default function StatsPage() {
 
   // ── Heatmap ────────────────────────────────────────────────────────────────
   const WEEKS = 14;
-  const heatmapDays = WEEKS * 7;
   // Build cups-per-day map
   const cupsPerDay = {};
   for (const l of logs) {
     const k = toLocalDateStr(l.logged_at);
     cupsPerDay[k] = (cupsPerDay[k] || 0) + 1;
   }
-  // Build grid: array of WEEKS columns, each with 7 days
-  // Grid ends today, starts (WEEKS*7 - 1) days ago
+  // Build grid: 14 complete Mon–Sun weeks, last week = current week
+  const todayDow = (today.getDay() + 6) % 7; // 0=Mon, 6=Sun
   const gridStart = new Date(today);
-  gridStart.setDate(today.getDate() - (heatmapDays - 1));
+  gridStart.setDate(today.getDate() - todayDow - (WEEKS - 1) * 7);
 
   const grid = []; // array of columns (weeks), each column has 7 day objects
   let monthLabels = []; // { col, label }
