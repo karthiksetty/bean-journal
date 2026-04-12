@@ -263,7 +263,7 @@ export default function StatsPage() {
             <div style={{ display: "flex" }}>
               {/* Day labels */}
               <div style={{ display: "flex", flexDirection: "column", gap: 3, marginRight: 6, paddingTop: 20 }}>
-                {["M", "", "W", "", "F", "", ""].map((d, i) => (
+                {["M", "", "W", "", "F", "", "S"].map((d, i) => (
                   <div key={i} style={{ fontSize: 10, color: "#A0896B", height: 13, lineHeight: "13px", width: 10, textAlign: "right" }}>{d}</div>
                 ))}
               </div>
