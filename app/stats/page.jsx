@@ -271,27 +271,27 @@ export default function StatsPage() {
               {/* Day labels */}
               <div style={{ display: "flex", flexDirection: "column", gap: 3, marginRight: 6, paddingTop: 20 }}>
                 {["M", "", "W", "", "F", "", "S"].map((d, i) => (
-                  <div key={i} style={{ fontSize: 10, color: "#A0896B", height: 13, lineHeight: "13px", width: 10, textAlign: "right" }}>{d}</div>
+                  <div key={i} style={{ fontSize: 10, color: "#A0896B", height: 16, lineHeight: "16px", width: 10, textAlign: "right" }}>{d}</div>
                 ))}
               </div>
 
-              <div style={{ flex: 1, overflow: "hidden" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 {/* Month labels */}
                 <div style={{ display: "flex", marginBottom: 4, height: 16, position: "relative" }}>
                   {monthLabels.map(({ col, label }) => (
-                    <div key={label} style={{ position: "absolute", left: col * 16, fontSize: 10, color: "#A0896B" }}>{label}</div>
+                    <div key={label} style={{ position: "absolute", left: `${(col / WEEKS) * 100}%`, fontSize: 10, color: "#A0896B" }}>{label}</div>
                   ))}
                 </div>
 
                 {/* Grid */}
                 <div style={{ display: "flex", gap: 3 }}>
                   {grid.map((col, w) => (
-                    <div key={w} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    <div key={w} style={{ display: "flex", flexDirection: "column", gap: 3, flex: 1 }}>
                       {col.map((cell, d) => (
                         <div
                           key={d}
                           title={cell.isFuture ? "" : `${cell.date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}: ${cell.cups} cup${cell.cups !== 1 ? "s" : ""}`}
-                          style={{ width: 13, height: 13, borderRadius: 2, background: cell.isFuture ? "transparent" : cupColor(cell.cups), flexShrink: 0 }}
+                          style={{ aspectRatio: "1", borderRadius: 3, background: cell.isFuture ? "transparent" : cupColor(cell.cups) }}
                         />
                       ))}
                     </div>
@@ -304,7 +304,7 @@ export default function StatsPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 10, justifyContent: "flex-end" }}>
               <span style={{ fontSize: 10, color: "#A0896B" }}>0</span>
               {["#F0EAE0", "#C4A882", "#6B4226", "#2C1810"].map((bg, i) => (
-                <div key={i} style={{ width: 13, height: 13, borderRadius: 2, background: bg }} />
+                <div key={i} style={{ width: 14, height: 14, borderRadius: 3, background: bg }} />
               ))}
               <span style={{ fontSize: 10, color: "#A0896B" }}>3+</span>
             </div>
