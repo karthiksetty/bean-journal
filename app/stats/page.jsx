@@ -95,17 +95,24 @@ export default function StatsPage() {
   const favShort = favBeanName.length > 16 ? favBeanName.split(" ").slice(0, 2).join(" ") : favBeanName;
 
   // ── Heatmap ────────────────────────────────────────────────────────────────
-  const WEEKS = 14;
   // Build cups-per-day map
   const cupsPerDay = {};
   for (const l of logs) {
     const k = toLocalDateStr(l.logged_at);
     cupsPerDay[k] = (cupsPerDay[k] || 0) + 1;
   }
-  // Build grid: 14 complete Mon–Sun weeks, last week = current week
+  // Start from the Monday of the week before the first log (or 4 weeks ago min)
   const todayDow = (today.getDay() + 6) % 7; // 0=Mon, 6=Sun
-  const gridStart = new Date(today);
-  gridStart.setDate(today.getDate() - todayDow - (WEEKS - 1) * 7);
+  const firstLog = logs.length > 0 ? new Date(logs[logs.length - 1].logged_at) : today;
+  // Align firstLog back to its Monday
+  const firstLogDow = (firstLog.getDay() + 6) % 7;
+  const firstMonday = new Date(firstLog);
+  firstMonday.setDate(firstLog.getDate() - firstLogDow - 7); // 1 week padding
+  // Align today forward to end of current week (Sunday)
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - todayDow);
+  const WEEKS = Math.max(4, Math.round((weekStart - firstMonday) / (7 * 86400000)) + 1);
+  const gridStart = firstMonday;
 
   const grid = []; // array of columns (weeks), each column has 7 day objects
   let monthLabels = []; // { col, label }
@@ -257,7 +264,7 @@ export default function StatsPage() {
           <div style={card}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <div style={cardTitle}>Activity</div>
-              <span style={{ fontSize: 11, color: "#A0896B" }}>Last {WEEKS} weeks</span>
+              <span style={{ fontSize: 11, color: "#A0896B" }}>{WEEKS} weeks</span>
             </div>
 
             <div style={{ display: "flex" }}>
