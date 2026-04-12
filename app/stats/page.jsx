@@ -267,7 +267,7 @@ export default function StatsPage() {
               <span style={{ fontSize: 11, color: "#A0896B" }}>{WEEKS} weeks</span>
             </div>
 
-            <div style={{ display: "flex" }}>
+            <div style={{ display: "flex", justifyContent: "center" }}>
               {/* Day labels */}
               <div style={{ display: "flex", flexDirection: "column", gap: 4, marginRight: 6, paddingTop: 20 }}>
                 {["M", "", "W", "", "F", "", "S"].map((d, i) => (
@@ -275,7 +275,7 @@ export default function StatsPage() {
                 ))}
               </div>
 
-              <div style={{ flex: 1, minWidth: 0, overflowX: "auto" }}>
+              <div style={{ overflowX: "auto" }}>
                 {/* Month labels */}
                 <div style={{ display: "flex", marginBottom: 4, height: 16, position: "relative", minWidth: WEEKS * 22 }}>
                   {monthLabels.map(({ col, label }) => (
