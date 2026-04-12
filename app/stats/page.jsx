@@ -284,7 +284,7 @@ export default function StatsPage() {
                 </div>
 
                 {/* Grid */}
-                <div style={{ display: "flex", gap: 3 }}>
+                <div style={{ display: "flex", gap: 3, justifyContent: "space-between" }}>
                   {grid.map((col, w) => (
                     <div key={w} style={{ display: "flex", flexDirection: "column", gap: 3, flex: 1, maxWidth: 40 }}>
                       {col.map((cell, d) => (
