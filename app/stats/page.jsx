@@ -108,6 +108,7 @@ export default function StatsPage() {
   const firstLogDow = (firstLog.getDay() + 6) % 7;
   const firstMonday = new Date(firstLog);
   firstMonday.setDate(firstLog.getDate() - firstLogDow - 7); // 1 week padding
+  firstMonday.setHours(0, 0, 0, 0);
   // Align today forward to end of current week (Sunday)
   const weekStart = new Date(today);
   weekStart.setDate(today.getDate() - todayDow);
