@@ -777,6 +777,7 @@ export default function BeanDatabase() {
             <div style={{ marginTop: "48px", paddingTop: "24px", borderTop: "1px solid #EDE5D8", display: "flex", gap: "32px", flexWrap: "wrap" }}>
               {[
                 { label: "Total Beans", value: beans.length },
+                { label: "Available", value: beans.filter(b => b.available !== false).length },
                 { label: "Countries", value: uniqueCountries.size },
                 { label: "Process Types", value: new Set(beans.map(b => b.process).filter(Boolean)).size },
                 { label: "Rated", value: beans.filter(b => b.myRating > 0).length },
