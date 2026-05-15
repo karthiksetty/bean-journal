@@ -521,6 +521,19 @@ export default function BeanDatabase() {
   const [session, setSession] = useState(null);
 
   const [drinkLogs, setDrinkLogs] = useState({}); // { beanId: { count, lastDays } }
+  const [hideUnavailable, setHideUnavailable] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const saved = localStorage.getItem("bj_hideUnavailable");
+    return saved === null ? true : saved === "true";
+  });
+
+  const toggleHideUnavailable = () => {
+    setHideUnavailable(prev => {
+      const next = !prev;
+      localStorage.setItem("bj_hideUnavailable", String(next));
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetchBeans();
@@ -628,6 +641,7 @@ export default function BeanDatabase() {
   )].filter(Boolean).sort()];
 
   const filtered = beans.filter(b => {
+    if (hideUnavailable && b.available === false) return false;
     const matchSearch = !search
       || b.name.toLowerCase().includes(search.toLowerCase())
       || (b.brand && b.brand.toLowerCase().includes(search.toLowerCase()))
@@ -638,6 +652,8 @@ export default function BeanDatabase() {
     const matchRegion = matchesRegionFilter(b.region, regionFilter);
     return matchSearch && matchProcess && matchRegion;
   });
+
+  const hiddenRanOutCount = hideUnavailable ? beans.filter(b => b.available === false).length : 0;
 
   const uniqueCountries = new Set(beans.flatMap(b => b.region.map(r => r.split(",").at(-1).trim())).filter(Boolean));
 
@@ -676,7 +692,10 @@ export default function BeanDatabase() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
                 <h1 className="header-title" style={{ fontSize: "28px", fontWeight: "700", color: "#2C1810", fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>Bean Journal</h1>
-                <span className="bean-count" style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif" }}>{beans.length} beans</span>
+                <span className="bean-count" style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", overflow: "hidden", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif", border: "1px solid #EDE5D8" }}>
+                  <span style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px" }}>{beans.filter(b => b.available !== false).length}</span>
+                  <span style={{ background: "#EBEBEB", color: "#888", padding: "3px 10px" }}>{beans.length}</span>
+                </span>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <a href="/stats" className="find-btn"
@@ -719,6 +738,19 @@ export default function BeanDatabase() {
               <div className="filter-row">
                 {allRegions.map(r => <button key={r} onClick={() => setRegionFilter(r)} style={{ padding: "8px 14px", borderRadius: "20px", border: "1px solid", borderColor: regionFilter === r ? "#C4A882" : "#EDE5D8", background: regionFilter === r ? "#C4A882" : "transparent", color: regionFilter === r ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>{r}</button>)}
               </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingTop: "2px" }}>
+                <button
+                  type="button"
+                  onClick={toggleHideUnavailable}
+                  aria-label={hideUnavailable ? "Show ran out beans" : "Hide ran out beans"}
+                  style={{ width: "44px", height: "26px", borderRadius: "13px", border: "none", cursor: "pointer", background: hideUnavailable ? "#2C1810" : "#D1D5DB", position: "relative", transition: "background 0.2s", flexShrink: 0, padding: 0 }}
+                >
+                  <span style={{ position: "absolute", top: "3px", left: hideUnavailable ? "21px" : "3px", width: "20px", height: "20px", borderRadius: "50%", background: "white", transition: "left 0.2s", display: "block", boxShadow: "0 1px 3px rgba(0,0,0,0.15)" }} />
+                </button>
+                <span style={{ fontSize: "12px", color: "#6B5039", fontFamily: "'DM Sans', sans-serif", fontWeight: "500", userSelect: "none" }}>
+                  Hide ran out{hiddenRanOutCount > 0 ? ` (${hiddenRanOutCount})` : ""}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -729,7 +761,11 @@ export default function BeanDatabase() {
             <div style={{ textAlign: "center", padding: "80px 0", color: "#A0896B", fontFamily: "'DM Sans', sans-serif" }}>Loading your beans…</div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: "center", padding: "80px 0", color: "#A0896B", fontFamily: "'DM Sans', sans-serif" }}>
-              {beans.length === 0 ? "No beans yet — add your first one!" : "No beans match your search"}
+              {beans.length === 0
+                ? "No beans yet — add your first one!"
+                : hideUnavailable && beans.every(b => b.available === false)
+                ? <span>All beans have run out. <button onClick={toggleHideUnavailable} style={{ background: "none", border: "none", color: "#C4A882", fontFamily: "'DM Sans', sans-serif", fontSize: "inherit", cursor: "pointer", textDecoration: "underline", padding: 0 }}>Show them</button></span>
+                : "No beans match your search"}
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
