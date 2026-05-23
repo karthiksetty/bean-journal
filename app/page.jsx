@@ -691,15 +691,9 @@ export default function BeanDatabase() {
         <div className="header-wrap" style={{ background: "#FEFCF8", borderBottom: "1px solid #EDE5D8", padding: "32px 40px 24px", position: "sticky", top: 0, zIndex: 10 }}>
           <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-              <div className="title-block" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
-                  <h1 className="header-title" style={{ fontSize: "28px", fontWeight: "700", color: "#2C1810", fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>Bean Journal</h1>
-                  <span className="bean-count" style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", overflow: "hidden", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif", border: "1px solid #EDE5D8" }}>
-                    <span style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px" }}>{beans.filter(b => b.available !== false).length}</span>
-                    <span style={{ background: "#EBEBEB", color: "#888", padding: "3px 10px" }}>{beans.length}</span>
-                  </span>
-                </div>
-                <span className="bean-count-mobile" style={{ display: "none", alignItems: "center", borderRadius: "20px", overflow: "hidden", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif", border: "1px solid #EDE5D8", alignSelf: "flex-start" }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
+                <h1 className="header-title" style={{ fontSize: "28px", fontWeight: "700", color: "#2C1810", fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>Bean Journal</h1>
+                <span className="bean-count" style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", overflow: "hidden", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif", border: "1px solid #EDE5D8" }}>
                   <span style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px" }}>{beans.filter(b => b.available !== false).length}</span>
                   <span style={{ background: "#EBEBEB", color: "#888", padding: "3px 10px" }}>{beans.length}</span>
                 </span>
@@ -759,6 +753,10 @@ export default function BeanDatabase() {
                     Hide ran out{hiddenRanOutCount > 0 ? ` (${hiddenRanOutCount})` : ""}
                   </span>
                 </div>
+                <span className="bean-count-mobile" style={{ display: "none", alignItems: "center", borderRadius: "20px", overflow: "hidden", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif", border: "1px solid #EDE5D8" }}>
+                  <span style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px" }}>{beans.filter(b => b.available !== false).length}</span>
+                  <span style={{ background: "#EBEBEB", color: "#888", padding: "3px 10px" }}>{beans.length}</span>
+                </span>
               </div>
             </div>
           </div>
