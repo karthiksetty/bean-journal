@@ -673,7 +673,6 @@ export default function BeanDatabase() {
         @media (max-width: 640px) {
           .header-wrap { padding: 14px 16px 12px !important; }
           .header-title { font-size: 20px !important; }
-          .bean-count { display: none !important; }
           .find-btn { padding: 8px 10px !important; font-size: 12px !important; gap: 4px !important; }
           .signin-btn { padding: 8px 12px !important; font-size: 12px !important; }
           .add-btn { padding: 8px 12px !important; font-size: 12px !important; gap: 4px !important; }
@@ -682,6 +681,8 @@ export default function BeanDatabase() {
           .filter-row::-webkit-scrollbar { display: none; }
           .filter-row button { white-space: nowrap; flex-shrink: 0; }
           .search-area { gap: 8px !important; }
+          .bean-count { display: none !important; }
+          .bean-count-mobile { display: inline-flex !important; }
         }
       `}</style>
 
@@ -690,9 +691,15 @@ export default function BeanDatabase() {
         <div className="header-wrap" style={{ background: "#FEFCF8", borderBottom: "1px solid #EDE5D8", padding: "32px 40px 24px", position: "sticky", top: 0, zIndex: 10 }}>
           <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
-                <h1 className="header-title" style={{ fontSize: "28px", fontWeight: "700", color: "#2C1810", fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>Bean Journal</h1>
-                <span className="bean-count" style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", overflow: "hidden", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif", border: "1px solid #EDE5D8" }}>
+              <div className="title-block" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
+                  <h1 className="header-title" style={{ fontSize: "28px", fontWeight: "700", color: "#2C1810", fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>Bean Journal</h1>
+                  <span className="bean-count" style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", overflow: "hidden", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif", border: "1px solid #EDE5D8" }}>
+                    <span style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px" }}>{beans.filter(b => b.available !== false).length}</span>
+                    <span style={{ background: "#EBEBEB", color: "#888", padding: "3px 10px" }}>{beans.length}</span>
+                  </span>
+                </div>
+                <span className="bean-count-mobile" style={{ display: "none", alignItems: "center", borderRadius: "20px", overflow: "hidden", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif", border: "1px solid #EDE5D8", alignSelf: "flex-start" }}>
                   <span style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px" }}>{beans.filter(b => b.available !== false).length}</span>
                   <span style={{ background: "#EBEBEB", color: "#888", padding: "3px 10px" }}>{beans.length}</span>
                 </span>
@@ -738,18 +745,20 @@ export default function BeanDatabase() {
               <div className="filter-row">
                 {allRegions.map(r => <button key={r} onClick={() => setRegionFilter(r)} style={{ padding: "8px 14px", borderRadius: "20px", border: "1px solid", borderColor: regionFilter === r ? "#C4A882" : "#EDE5D8", background: regionFilter === r ? "#C4A882" : "transparent", color: regionFilter === r ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>{r}</button>)}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingTop: "2px" }}>
-                <button
-                  type="button"
-                  onClick={toggleHideUnavailable}
-                  aria-label={hideUnavailable ? "Show ran out beans" : "Hide ran out beans"}
-                  style={{ width: "44px", height: "26px", borderRadius: "13px", border: "none", cursor: "pointer", background: hideUnavailable ? "#2C1810" : "#D1D5DB", position: "relative", transition: "background 0.2s", flexShrink: 0, padding: 0 }}
-                >
-                  <span style={{ position: "absolute", top: "3px", left: hideUnavailable ? "21px" : "3px", width: "20px", height: "20px", borderRadius: "50%", background: "white", transition: "left 0.2s", display: "block", boxShadow: "0 1px 3px rgba(0,0,0,0.15)" }} />
-                </button>
-                <span style={{ fontSize: "12px", color: "#6B5039", fontFamily: "'DM Sans', sans-serif", fontWeight: "500", userSelect: "none" }}>
-                  Hide ran out{hiddenRanOutCount > 0 ? ` (${hiddenRanOutCount})` : ""}
-                </span>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingTop: "2px" }}>
+                  <button
+                    type="button"
+                    onClick={toggleHideUnavailable}
+                    aria-label={hideUnavailable ? "Show ran out beans" : "Hide ran out beans"}
+                    style={{ width: "44px", height: "26px", borderRadius: "13px", border: "none", cursor: "pointer", background: hideUnavailable ? "#2C1810" : "#D1D5DB", position: "relative", transition: "background 0.2s", flexShrink: 0, padding: 0 }}
+                  >
+                    <span style={{ position: "absolute", top: "3px", left: hideUnavailable ? "21px" : "3px", width: "20px", height: "20px", borderRadius: "50%", background: "white", transition: "left 0.2s", display: "block", boxShadow: "0 1px 3px rgba(0,0,0,0.15)" }} />
+                  </button>
+                  <span style={{ fontSize: "12px", color: "#6B5039", fontFamily: "'DM Sans', sans-serif", fontWeight: "500", userSelect: "none" }}>
+                    Hide ran out{hiddenRanOutCount > 0 ? ` (${hiddenRanOutCount})` : ""}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
