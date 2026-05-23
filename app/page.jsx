@@ -520,6 +520,7 @@ export default function BeanDatabase() {
   const [editBean, setEditBean] = useState(null);
   const [session, setSession] = useState(null);
 
+  const [showHow, setShowHow] = useState(false);
   const [drinkLogs, setDrinkLogs] = useState({}); // { beanId: { count, lastDays } }
   const [hideUnavailable, setHideUnavailable] = useState(() => {
     if (typeof window === "undefined") return true;
@@ -669,6 +670,14 @@ export default function BeanDatabase() {
         input:focus { border-color: #C4A882 !important; box-shadow: 0 0 0 3px rgba(196,168,130,0.15); }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .how-drawer { position: fixed; bottom: 0; left: 0; right: 0; height: 92vh; background: #FEFCF8; border-radius: 20px 20px 0 0; box-shadow: 0 -8px 40px rgba(44,24,16,0.15); z-index: 300; transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); overflow-y: auto; }
+        .how-drawer.open { transform: translateY(0); }
+        .how-overlay { position: fixed; inset: 0; background: rgba(44,24,16,0.4); backdrop-filter: blur(2px); z-index: 299; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .how-overlay.open { opacity: 1; pointer-events: all; }
+        @media (min-width: 641px) {
+          .how-drawer { top: 0; left: auto; right: 0; bottom: 0; width: 480px; height: 100vh; border-radius: 0; transform: translateX(100%); }
+          .how-drawer.open { transform: translateX(0); }
+        }
         .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
         @media (max-width: 640px) {
           .header-wrap { padding: 14px 16px 12px !important; }
@@ -781,7 +790,7 @@ export default function BeanDatabase() {
           )}
 
           {beans.length > 0 && (
-            <div style={{ marginTop: "48px", paddingTop: "24px", borderTop: "1px solid #EDE5D8", display: "flex", gap: "32px", flexWrap: "wrap" }}>
+            <div style={{ marginTop: "48px", paddingTop: "24px", borderTop: "1px solid #EDE5D8", display: "flex", gap: "32px", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between" }}>
               {[
                 { label: "Total Beans", value: beans.length },
                 { label: "Available", value: beans.filter(b => b.available !== false).length },
@@ -794,6 +803,10 @@ export default function BeanDatabase() {
                   <p style={{ fontSize: "24px", fontWeight: "700", color: "#2C1810", fontFamily: "'Playfair Display', serif" }}>{value}</p>
                 </div>
               ))}
+              <button onClick={() => setShowHow(true)} style={{ fontSize: "11px", color: "#C4B99A", fontFamily: "'DM Sans', sans-serif", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.04em", padding: 0 }}
+                onMouseEnter={e => e.currentTarget.style.color = "#A0896B"}
+                onMouseLeave={e => e.currentTarget.style.color = "#C4B99A"}
+              >How this is built →</button>
             </div>
           )}
         </div>
@@ -807,6 +820,51 @@ export default function BeanDatabase() {
           onSave={bean => { if (editBean) handleEdit(bean); else handleAdd(bean); }}
         />
       )}
+
+      {/* How this is built drawer */}
+      <div className={`how-overlay${showHow ? " open" : ""}`} onClick={() => setShowHow(false)} />
+      <div className={`how-drawer${showHow ? " open" : ""}`}>
+        {/* Handle bar (mobile) */}
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 0" }}>
+          <div style={{ width: "36px", height: "4px", borderRadius: "2px", background: "#EDE5D8" }} />
+        </div>
+        {/* Drawer header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "20px 28px 16px", borderBottom: "1px solid #EDE5D8" }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "700", color: "#2C1810", fontFamily: "'Playfair Display', serif" }}>How this is built</h2>
+            <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#A0896B", fontFamily: "'DM Sans', sans-serif" }}>A personal coffee bean journal</p>
+          </div>
+          <button onClick={() => setShowHow(false)} style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#F5EFE6", border: "none", cursor: "pointer", fontSize: "18px", color: "#6B5039", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
+        </div>
+        {/* Sections */}
+        <div style={{ padding: "24px 28px 48px" }}>
+          {[
+            { icon: "🤖", bg: "#EDE9FE", title: "Built with Claude", body: "This entire app — frontend, backend, database schema, and AI features — was designed and built through conversations with Claude (Anthropic). No boilerplate, no templates; every component and query was written iteratively in response to real feature requests." },
+            { icon: "🗄️", bg: "#FEF3C7", title: "Database: Supabase", body: "Bean data, drink logs, and user accounts live in PostgreSQL via Supabase. Row-level security keeps each user's collection private. The anon key powers read access in the browser; a service-role key is used server-side for trusted writes." },
+            { icon: "⚛️", bg: "#E0F2FE", title: "Frontend: Next.js + React", body: "The UI is built with Next.js 16 and React 18. No CSS framework — all styling uses inline styles with a warm editorial design system. Playfair Display for headings, DM Sans for body text, cream-and-terracotta palette throughout." },
+            { icon: "✨", bg: "#FEF9C3", title: "AI Features: Claude API", body: "Two AI features powered by Anthropic's Claude: \"Discover Facts\" streams 3 specific facts about any bean covering terroir, genetics, and processing. \"Find My Bean\" recommends a bean from your collection based on mood and time of day." },
+            { icon: "📸", bg: "#DCFCE7", title: "Add Bean from Photo", body: "A Claude Code skill lets you photograph any coffee bag and add it directly to the database. Claude's vision extracts the name, origin, variety, process, and tasting notes from the label. You review and confirm before it hits Supabase." },
+            { icon: "🚀", bg: "#FFE4E6", title: "Deployed on Vercel", body: "The Next.js app is deployed on Vercel and served at beans.setty.in. Every push to the main branch triggers an automatic deployment. Environment variables keep the Supabase service role key secure on the server side." },
+          ].map((s, i, arr) => (
+            <div key={i} style={{ display: "flex", gap: "16px", paddingBottom: "24px", marginBottom: "24px", borderBottom: i < arr.length - 1 ? "1px solid #F0EAE0" : "none" }}>
+              <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", flexShrink: 0 }}>{s.icon}</div>
+              <div>
+                <p style={{ margin: "0 0 5px", fontSize: "14px", fontWeight: "600", color: "#2C1810", fontFamily: "'DM Sans', sans-serif" }}>{s.title}</p>
+                <p style={{ margin: 0, fontSize: "13px", color: "#6B5039", fontFamily: "'DM Sans', sans-serif", lineHeight: "1.65" }}>{s.body}</p>
+              </div>
+            </div>
+          ))}
+          {/* Stack pills */}
+          <div>
+            <p style={{ fontSize: "11px", color: "#A0896B", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Sans', sans-serif", marginBottom: "10px", fontWeight: "600" }}>Stack</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
+              {["Next.js 16","React 18","Supabase","PostgreSQL","Claude API","Anthropic SDK","Vercel","Playfair Display","DM Sans"].map(t => (
+                <span key={t} style={{ background: "#F5EFE6", color: "#6B5039", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif", border: "1px solid #EDE5D8" }}>{t}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 }
