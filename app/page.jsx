@@ -536,6 +536,19 @@ export default function BeanDatabase() {
     });
   };
 
+  const [filtersOpen, setFiltersOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("bj_filtersOpen") === "true";
+  });
+
+  const toggleFiltersOpen = () => {
+    setFiltersOpen(prev => {
+      const next = !prev;
+      localStorage.setItem("bj_filtersOpen", String(next));
+      return next;
+    });
+  };
+
   useEffect(() => {
     fetchBeans();
     fetchDrinkLogs();
@@ -640,6 +653,7 @@ export default function BeanDatabase() {
   const allRegions = ["All", ...[...new Set(
     beans.flatMap(b => b.region.map(r => r.split(",").at(-1).trim()))
   )].filter(Boolean).sort()];
+  const activeFilterCount = (processFilter !== "All" ? 1 : 0) + (regionFilter !== "All" ? 1 : 0);
 
   const filtered = beans.filter(b => {
     if (hideUnavailable && b.available === false) return false;
@@ -742,31 +756,49 @@ export default function BeanDatabase() {
             <div className="search-area" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search beans, regions, varieties, flavours…"
                 style={{ width: "100%", padding: "10px 16px", border: "1px solid #EDE5D8", borderRadius: "12px", background: "#FAF7F2", fontSize: "13px", color: "#2C1810", fontFamily: "'DM Sans', sans-serif", outline: "none" }} />
-              <div className="filter-row">
-                {allProcesses.map(p => <button key={p} onClick={() => setProcessFilter(p)} style={{ padding: "8px 14px", borderRadius: "20px", border: "1px solid", borderColor: processFilter === p ? "#2C1810" : "#EDE5D8", background: processFilter === p ? "#2C1810" : "transparent", color: processFilter === p ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>{p}</button>)}
-              </div>
-              <div className="filter-row">
-                {allRegions.map(r => <button key={r} onClick={() => setRegionFilter(r)} style={{ padding: "8px 14px", borderRadius: "20px", border: "1px solid", borderColor: regionFilter === r ? "#C4A882" : "#EDE5D8", background: regionFilter === r ? "#C4A882" : "transparent", color: regionFilter === r ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>{r}</button>)}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingTop: "2px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
                   <button
                     type="button"
-                    onClick={toggleHideUnavailable}
-                    aria-label={hideUnavailable ? "Show ran out beans" : "Hide ran out beans"}
-                    style={{ width: "44px", height: "26px", borderRadius: "13px", border: "none", cursor: "pointer", background: hideUnavailable ? "#2C1810" : "#D1D5DB", position: "relative", transition: "background 0.2s", flexShrink: 0, padding: 0 }}
+                    onClick={toggleFiltersOpen}
+                    aria-expanded={filtersOpen}
+                    style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 12px", borderRadius: "20px", border: "1px solid", borderColor: filtersOpen || activeFilterCount > 0 ? "#2C1810" : "#EDE5D8", background: filtersOpen ? "#2C1810" : "transparent", color: filtersOpen ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}
                   >
-                    <span style={{ position: "absolute", top: "3px", left: hideUnavailable ? "21px" : "3px", width: "20px", height: "20px", borderRadius: "50%", background: "white", transition: "left 0.2s", display: "block", boxShadow: "0 1px 3px rgba(0,0,0,0.15)" }} />
+                    Filters
+                    {activeFilterCount > 0 && (
+                      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "16px", height: "16px", padding: "0 4px", borderRadius: "9px", background: filtersOpen ? "#FAF7F2" : "#2C1810", color: filtersOpen ? "#2C1810" : "#FAF7F2", fontSize: "10px", fontWeight: "700" }}>{activeFilterCount}</span>
+                    )}
+                    <span style={{ fontSize: "9px", transform: filtersOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▾</span>
                   </button>
-                  <span style={{ fontSize: "12px", color: "#6B5039", fontFamily: "'DM Sans', sans-serif", fontWeight: "500", userSelect: "none" }}>
-                    Hide ran out{hiddenRanOutCount > 0 ? ` (${hiddenRanOutCount})` : ""}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <button
+                      type="button"
+                      onClick={toggleHideUnavailable}
+                      aria-label={hideUnavailable ? "Show ran out beans" : "Hide ran out beans"}
+                      style={{ width: "44px", height: "26px", borderRadius: "13px", border: "none", cursor: "pointer", background: hideUnavailable ? "#2C1810" : "#D1D5DB", position: "relative", transition: "background 0.2s", flexShrink: 0, padding: 0 }}
+                    >
+                      <span style={{ position: "absolute", top: "3px", left: hideUnavailable ? "21px" : "3px", width: "20px", height: "20px", borderRadius: "50%", background: "white", transition: "left 0.2s", display: "block", boxShadow: "0 1px 3px rgba(0,0,0,0.15)" }} />
+                    </button>
+                    <span style={{ fontSize: "12px", color: "#6B5039", fontFamily: "'DM Sans', sans-serif", fontWeight: "500", userSelect: "none" }}>
+                      Hide ran out{hiddenRanOutCount > 0 ? ` (${hiddenRanOutCount})` : ""}
+                    </span>
+                  </div>
                 </div>
                 <span className="bean-count-mobile" style={{ display: "none", alignItems: "center", borderRadius: "20px", overflow: "hidden", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif", border: "1px solid #EDE5D8" }}>
                   <span style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px" }}>{beans.filter(b => b.available !== false).length}</span>
                   <span style={{ background: "#EBEBEB", color: "#888", padding: "3px 10px" }}>{beans.length}</span>
                 </span>
               </div>
+              {filtersOpen && (
+                <>
+                  <div className="filter-row">
+                    {allProcesses.map(p => <button key={p} onClick={() => setProcessFilter(p)} style={{ padding: "8px 14px", borderRadius: "20px", border: "1px solid", borderColor: processFilter === p ? "#2C1810" : "#EDE5D8", background: processFilter === p ? "#2C1810" : "transparent", color: processFilter === p ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>{p}</button>)}
+                  </div>
+                  <div className="filter-row">
+                    {allRegions.map(r => <button key={r} onClick={() => setRegionFilter(r)} style={{ padding: "8px 14px", borderRadius: "20px", border: "1px solid", borderColor: regionFilter === r ? "#C4A882" : "#EDE5D8", background: regionFilter === r ? "#C4A882" : "transparent", color: regionFilter === r ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>{r}</button>)}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
