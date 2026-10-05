@@ -92,11 +92,6 @@ function AromaTag({ label, small = false }) {
   );
 }
 
-function matchesRegionFilter(regions, filter) {
-  if (filter === "All") return true;
-  return regions.some(r => r.includes(filter));
-}
-
 function ProcessBadge({ process }) {
   const colors = processColors[process] || { bg: "#F5F0E8", text: "#6B5C45", dot: "#6B5C45" };
   return (
@@ -152,76 +147,77 @@ function lastDrunkLabel(days) {
   return `${days}d ago`;
 }
 
-function BeanCard({ bean, onClick, drinkLog, onLog }) {
-  const [logFlash, setLogFlash] = useState(false);
-  const accentColor = (processColors[bean.process] || { dot: "#C4A882" }).dot;
-  const unavailable = bean.available === false;
+const FAM = {
+  natural:   { label: "Natural",    tile: "#D2483A", accent: "#D9A441", cof: ["#C27A3E", "#6B2C1F"] },
+  honey:     { label: "Honey",      tile: "#D9A441", accent: "#D2483A", cof: ["#E0A65A", "#8A4E22"] },
+  washed:    { label: "Washed",     tile: "#9DB0A8", accent: "#A47B60", cof: ["#B98552", "#4A2E1C"] },
+  anaerobic: { label: "Anaerobic",  tile: "#A47B60", accent: "#9DB0A8", cof: ["#9C5A33", "#2E160E"] },
+  coferment: { label: "Co-ferment", tile: "#D9A99B", accent: "#5A2A22", cof: ["#F3E6D2", "#C9A27E"] },
+  carbonic:  { label: "Carbonic",   tile: "#5A2A22", accent: "#D9A99B", cof: ["#D08B4E", "#3A160E"] },
+};
+const TAG_DOTS = ["#D2483A", "#D9A441", "#9DB0A8", "#A47B60"];
 
-  const handleLog = (e) => {
-    e.stopPropagation();
-    onLog(bean.id);
-    setLogFlash(true);
-    setTimeout(() => setLogFlash(false), 1200);
-  };
+// Free-text process names are grouped into the six colour families of the poster design.
+function processFamily(process) {
+  const p = (process || "").toLowerCase();
+  if (p.includes("carbonic")) return "carbonic";
+  if (/co-?\s?ferment/.test(p)) return "coferment";
+  if (p.includes("anaerobic")) return "anaerobic";
+  if (p.includes("honey")) return "honey";
+  if (p.includes("washed")) return "washed";
+  return "natural";
+}
 
+function beanCountries(bean) {
+  return bean.region.map(r => r.split(",").at(-1).trim()).filter(Boolean);
+}
+
+function PosterCard({ bean, index, onClick, drinkLog, onLog }) {
+  const fam = FAM[processFamily(bean.process)];
+  const out = bean.available === false;
   const lastDays = drinkLog?.lastDays ?? null;
-  const totalCups = drinkLog?.count ?? 0;
+  const cups = drinkLog?.count ?? 0;
+  const brand = bean.brand && bean.brand !== "—" ? bean.brand : "";
+  const roasterLine = [brand, bean.producer].filter(Boolean).join(" · ");
+  const variety = bean.variety.slice(0, 2).join(" · ") + (bean.variety.length > 2 ? ` +${bean.variety.length - 2} more` : "");
+  const cupWord = `${cups} cup${cups === 1 ? "" : "s"}`;
+  const logLine = out ? `Ran out · ${cupWord}` : lastDays === null ? "Never logged" : `${lastDrunkLabel(lastDays)} · ${cupWord}`;
 
   return (
-    <div onClick={() => onClick(bean)}
-      style={{ background: "#FEFCF8", border: "1px solid #EDE5D8", borderRadius: "16px", padding: "24px", cursor: "pointer", transition: "all 0.2s ease", position: "relative", overflow: "hidden", opacity: unavailable ? 0.5 : 1, filter: unavailable ? "grayscale(70%)" : "none" }}
-      onMouseEnter={e => { if (!unavailable) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(44,24,16,0.08)"; e.currentTarget.style.borderColor = "#C4A882"; } }}
-      onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "#EDE5D8"; }}
-    >
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: accentColor, borderRadius: "16px 16px 0 0" }} />
-      {unavailable && (
-        <div style={{ position: "absolute", top: "12px", right: "12px", background: "#EBEBEB", color: "#888", fontSize: "10px", fontWeight: "600", padding: "3px 8px", borderRadius: "8px", fontFamily: "'DM Sans', sans-serif", textTransform: "uppercase", letterSpacing: "0.06em" }}>Ran out</div>
-      )}
-      <div style={{ marginBottom: "12px" }}>
-        <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "#2C1810", fontFamily: "'Playfair Display', serif", lineHeight: "1.3", marginBottom: "4px" }}>{bean.name}</h3>
-        <p style={{ margin: 0, fontSize: "12px", color: "#A0896B", fontFamily: "'DM Sans', sans-serif" }}>
-          {bean.brand && bean.brand !== "—" ? bean.brand : ""}{bean.brand && bean.brand !== "—" && bean.producer ? " · " : ""}{bean.producer}
-        </p>
-      </div>
-      <div style={{ marginBottom: "10px" }}>
-        {bean.region.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "3px", marginBottom: "4px" }}>
-            <span style={{ fontSize: "12px", color: "#8C7A68", fontFamily: "'DM Sans', sans-serif", marginRight: "2px" }}>📍</span>
-            {bean.region.map(r => <span key={r} style={{ fontSize: "12px", color: "#8C7A68", fontFamily: "'DM Sans', sans-serif" }}>{r}{bean.region.indexOf(r) < bean.region.length - 1 ? " ·" : ""} </span>)}
-          </div>
-        )}
-        {bean.variety.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
-            <span style={{ fontSize: "12px", color: "#8C7A68", fontFamily: "'DM Sans', sans-serif", marginRight: "2px" }}>🌱</span>
-            {bean.variety.slice(0, 2).map(v => <span key={v} style={{ fontSize: "12px", color: "#8C7A68", fontFamily: "'DM Sans', sans-serif" }}>{v}{bean.variety.indexOf(v) < Math.min(bean.variety.length, 2) - 1 ? " ·" : ""} </span>)}
-            {bean.variety.length > 2 && <span style={{ fontSize: "12px", color: "#A0896B", fontFamily: "'DM Sans', sans-serif" }}>+{bean.variety.length - 2} more</span>}
-          </div>
-        )}
-      </div>
-      {bean.aroma.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "14px" }}>
-          {bean.aroma.slice(0, 3).map(a => <AromaTag key={a} label={a} small />)}
-          {bean.aroma.length > 3 && <span style={{ background: "#F5EFE6", color: "#A0896B", padding: "2px 8px", borderRadius: "10px", fontSize: "11px", fontFamily: "'DM Sans', sans-serif" }}>+{bean.aroma.length - 3}</span>}
+    <div className="pj-card" onClick={() => onClick(bean)} style={{ "--op": out ? 0.55 : 1 }}>
+      <div className="pj-card-head">
+        <h3 className="pj-card-name">{bean.name}</h3>
+        <div className="pj-card-no">
+          <span>Nº{String(index + 1).padStart(2, "0")}</span>
+          <div className="pj-swatches"><i style={{ background: fam.tile }} /><i style={{ background: "#161210" }} /><i style={{ background: fam.accent }} /></div>
         </div>
-      )}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <ProcessBadge process={bean.process} />
-        {bean.myRating > 0
-          ? <CupRating value={bean.myRating} />
-          : <span style={{ color: "#C4B99A", fontSize: "12px", fontFamily: "'DM Sans', sans-serif" }}>Not rated</span>}
       </div>
-      {/* Log row */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "12px", paddingTop: "10px", borderTop: "1px solid #F0EAE0" }}>
-        <div style={{ fontSize: "11px", fontFamily: "'DM Sans', sans-serif", color: lastDays === null ? "#C4B99A" : lastDays <= 1 ? "#2e7d32" : lastDays <= 5 ? "#b07800" : "#aaa" }}>
-          {lastDays === null ? "Never logged" : (
-            <><span style={{ marginRight: 4 }}>●</span>{lastDrunkLabel(lastDays)}{totalCups > 0 ? ` · ${totalCups} cup${totalCups !== 1 ? "s" : ""}` : ""}</>
-          )}
+      <div className="pj-tile" style={{ background: fam.tile }}>
+        <div className="pj-tile-shadow" />
+        <div className="pj-tile-cup">
+          <div className="pj-cup-handle" />
+          <div className="pj-cup-body"><div style={{ background: `radial-gradient(circle at 42% 38%,${fam.cof[0]} 0 22%,${fam.cof[1]} 74%)` }} /></div>
         </div>
-        <button
-          onClick={handleLog}
-          title="Log a cup"
-          style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid #EDE5D8", background: logFlash ? "#2C1810" : "#FAF7F2", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
-        >{logFlash ? "✓" : "☕"}</button>
+        <span className="pj-tile-proc">{bean.process || "Unknown"}</span>
+        <span className="pj-tile-rating">{bean.myRating > 0 ? `★ ${bean.myRating}/5` : "NOT RATED"}</span>
+      </div>
+      <div className="pj-card-info">
+        <div className="pj-fields">
+          {roasterLine && <div className="pj-field"><span className="pj-label">ROASTER</span><b>{roasterLine}</b></div>}
+          {bean.region.length > 0 && <div className="pj-field"><span className="pj-label">ORIGIN</span><span>{bean.region.join(" · ")}</span></div>}
+          {variety && <div className="pj-field"><span className="pj-label">VARIETY</span><span>{variety}</span></div>}
+        </div>
+        <div className="pj-notes">
+          <span className="pj-label">NOTES</span>
+          {bean.aroma.slice(0, 4).map((a, j) => <span key={a} className="pj-note"><i style={{ background: TAG_DOTS[j % 4] }} />{a}</span>)}
+          {bean.aroma.length > 4 && <span className="pj-more">+{bean.aroma.length - 4} more</span>}
+        </div>
+      </div>
+      <div className="pj-card-foot">
+        <span className="pj-log" style={{ color: !out && lastDays === 0 ? "#B23A2E" : "#161210" }}>{logLine}</span>
+        <button type="button" className="pj-log-btn" title="Log a cup" onClick={e => { e.stopPropagation(); onLog(bean.id); }}>
+          <span className="pj-mug"><span style={{ height: `${Math.min(100, Math.round(cups / 15 * 100))}%`, background: fam.tile }} /></span>+1 cup
+        </button>
       </div>
     </div>
   );
@@ -513,8 +509,8 @@ export default function BeanDatabase() {
   const [beans, setBeans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [processFilter, setProcessFilter] = useState("All");
-  const [regionFilter, setRegionFilter] = useState("All");
+  const [procFilter, setProcFilter] = useState([]);
+  const [ctryFilter, setCtryFilter] = useState([]);
   const [selectedBean, setSelectedBean] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editBean, setEditBean] = useState(null);
@@ -522,6 +518,7 @@ export default function BeanDatabase() {
 
   const [showHow, setShowHow] = useState(false);
   const [drinkLogs, setDrinkLogs] = useState({}); // { beanId: { count, lastDays } }
+  const [lastCup, setLastCup] = useState(null); // { beanId, days }
   const [hideUnavailable, setHideUnavailable] = useState(() => {
     if (typeof window === "undefined") return true;
     const saved = localStorage.getItem("bj_hideUnavailable");
@@ -572,11 +569,13 @@ export default function BeanDatabase() {
       map[id].count++;
     }
     setDrinkLogs(map);
+    if (data[0]) setLastCup({ beanId: data[0].bean_id, days: map[data[0].bean_id].lastDays });
   };
 
   const logCup = async (beanId) => {
     const { error } = await supabase.from("drink_logs").insert({ bean_id: beanId });
     if (error) return;
+    setLastCup({ beanId, days: 0 });
     setDrinkLogs(prev => {
       const existing = prev[beanId];
       return { ...prev, [beanId]: { count: (existing?.count ?? 0) + 1, lastDays: 0 } };
@@ -649,35 +648,32 @@ export default function BeanDatabase() {
     }
   };
 
-  const allProcesses = ["All", ...new Set(beans.map(b => b.process).filter(Boolean))];
-  const allRegions = ["All", ...[...new Set(
-    beans.flatMap(b => b.region.map(r => r.split(",").at(-1).trim()))
-  )].filter(Boolean).sort()];
-  const activeFilterCount = (processFilter !== "All" ? 1 : 0) + (regionFilter !== "All" ? 1 : 0);
+  const toggleIn = (arr, v) => arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
+  const allCountries = [...new Set(beans.flatMap(beanCountries))].sort();
+  const activeFilterCount = procFilter.length + ctryFilter.length;
+  const availableCount = beans.filter(b => b.available !== false).length;
+  const ranOutCount = beans.length - availableCount;
 
+  const q = search.trim().toLowerCase();
   const filtered = beans.filter(b => {
     if (hideUnavailable && b.available === false) return false;
-    const matchSearch = !search
-      || b.name.toLowerCase().includes(search.toLowerCase())
-      || (b.brand && b.brand.toLowerCase().includes(search.toLowerCase()))
-      || b.region.some(r => r.toLowerCase().includes(search.toLowerCase()))
-      || b.variety.some(v => v.toLowerCase().includes(search.toLowerCase()))
-      || b.aroma.some(a => a.toLowerCase().includes(search.toLowerCase()));
-    const matchProcess = processFilter === "All" || b.process === processFilter;
-    const matchRegion = matchesRegionFilter(b.region, regionFilter);
-    return matchSearch && matchProcess && matchRegion;
+    if (procFilter.length && !procFilter.includes(processFamily(b.process))) return false;
+    if (ctryFilter.length && !beanCountries(b).some(c => ctryFilter.includes(c))) return false;
+    return !q || [b.name, b.brand, b.producer, b.process, ...b.region, ...b.variety, ...b.aroma].join(" ").toLowerCase().includes(q);
   });
 
-  const hiddenRanOutCount = hideUnavailable ? beans.filter(b => b.available === false).length : 0;
+  const lastCupBean = lastCup ? beans.find(b => b.id === lastCup.beanId) : null;
+  const lastCupText = lastCupBean ? `${lastCupBean.name} · ${lastDrunkLabel(lastCup.days)}` : "No cups yet";
 
-  const uniqueCountries = new Set(beans.flatMap(b => b.region.map(r => r.split(",").at(-1).trim())).filter(Boolean));
+  const marqueeTags = [...new Set(filtered.flatMap(b => b.aroma))].slice(0, 30).join("  ✦  ");
+  const marquee = marqueeTags && `${marqueeTags}  ✦  ${marqueeTags}`;
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Righteous&family=Space+Grotesk:wght@400;500;700&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #FAF7F2; }
+        body { background: #E9E3D6; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #D4C4B0; border-radius: 3px; }
@@ -692,158 +688,288 @@ export default function BeanDatabase() {
           .how-drawer { top: 0; left: auto; right: 0; bottom: 0; width: 480px; height: 100vh; border-radius: 0; transform: translateX(100%); }
           .how-drawer.open { transform: translateX(0); }
         }
-        .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
-        @media (max-width: 640px) {
-          .header-wrap { padding: 14px 16px 12px !important; position: static !important; }
-          .header-top { flex-wrap: wrap; gap: 10px; margin-bottom: 12px !important; }
-          .header-actions { flex: 1 1 100%; flex-wrap: wrap; gap: 6px !important; }
-          .header-actions > * { flex: 1 1 auto; justify-content: center; text-align: center; }
-          .header-title { font-size: 20px !important; }
-          .find-btn { padding: 8px 10px !important; font-size: 12px !important; gap: 4px !important; }
-          .signin-btn { padding: 8px 12px !important; font-size: 12px !important; }
-          .add-btn { padding: 8px 12px !important; font-size: 12px !important; gap: 4px !important; }
-          .signout-btn { padding: 8px 10px !important; font-size: 12px !important; }
-          .filter-row { flex-wrap: nowrap !important; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
-          .filter-row::-webkit-scrollbar { display: none; }
-          .filter-row button { white-space: nowrap; flex-shrink: 0; }
-          .search-area { gap: 8px !important; }
-          .bean-count-mobile { display: none !important; }
+
+        .pj { min-height: 100vh; overflow-x: clip; color: #161210; font-family: 'Space Grotesk', sans-serif; --tf: 'Righteous'; --fw: 12px; background: #E9E3D6 url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix values=%220 0 0 0 0.1 0 0 0 0 0.07 0 0 0 0 0.05 0 0 0 0.22 0%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E'); }
+        .pj button { cursor: pointer; }
+        .pj input::placeholder { color: #161210; opacity: .5; }
+
+        .pj-bar { position: sticky; top: 0; z-index: 20; height: 64px; margin-bottom: -64px; background: #161210; color: #F3ECDD; display: none; align-items: center; gap: 16px; padding: 0 max(20px, calc((100% - 1180px) / 2)); }
+        .pj-bar-title { font: 800 30px/1 var(--tf); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+        .pj-bar-count { font: 500 12px 'DM Mono', monospace; border: 1.5px solid #F3ECDD; padding: 4px 8px; white-space: nowrap; }
+        .pj-bar-add { height: 44px; padding: 0 18px; border: none; background: #D9A441; color: #161210; font: 700 15px 'Space Grotesk', sans-serif; white-space: nowrap; }
+        .pj-bar-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: linear-gradient(90deg, #D2483A 0 17%, #D9A441 0 34%, #9DB0A8 0 51%, #A47B60 0 68%, #D9A99B 0 85%, #5A2A22 0); transform-origin: left; }
+
+        .pj-wrap { max-width: 1180px; margin: 0 auto; padding: clamp(24px, 5vw, 56px) 20px 0; }
+        .pj-hero { background: #F3ECDD; border: var(--fw, 14px) solid #161210; box-shadow: 0 24px 50px rgba(22,18,16,.22); padding: clamp(18px, 3vw, 34px); }
+        .pj-hero-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 28px; transform-origin: left bottom; }
+        .pj-title { font: 900 clamp(64px, 11vw, 148px)/0.84 var(--tf); letter-spacing: .03em; text-transform: uppercase; }
+        .pj-count { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; padding-bottom: 6px; }
+        .pj-count-num { font: 800 clamp(34px, 4vw, 52px)/0.9 var(--tf); }
+        .pj-count-num span { opacity: .45; }
+        .pj-count-bars { display: flex; gap: 4px; }
+        .pj-count-bars i { width: 34px; height: 5px; display: block; background: #D2483A; }
+        .pj-count-bars i:nth-child(2) { background: #F3ECDD; outline: 1.5px solid #161210; }
+        .pj-count-bars i:nth-child(3) { background: #9DB0A8; }
+        .pj-count-label { font: 500 11px 'DM Mono', monospace; letter-spacing: .12em; }
+
+        .pj-art { position: relative; margin-top: 18px; background: #D2483A; aspect-ratio: 21 / 8; min-height: 260px; overflow: hidden; }
+        .pj-art-shadow { position: absolute; left: 68%; top: 22%; width: 110%; height: 56%; background: rgba(40,12,8,.24); transform-origin: 0 50%; transform: rotate(45deg); }
+        .pj-ring-anchor { position: absolute; left: 68%; top: 50%; width: 0; height: 0; }
+        .pj-ring { position: absolute; left: -210px; top: -210px; width: 420px; height: 420px; }
+        .pj-ring svg { width: 100%; height: 100%; overflow: visible; }
+        .pj-ring text { font-family: 'DM Mono', monospace; font-weight: 500; font-size: 10.5px; }
+        .pj-hero-cup { position: absolute; left: 68%; top: 50%; width: min(28vw, 300px); aspect-ratio: 1; transform: translate(-50%, -50%); }
+        .pj-hero-handle { position: absolute; right: -18%; top: 42%; width: 24%; height: 16%; border-radius: 10px; background: #F6F1E6; }
+        .pj-hero-saucer { position: absolute; inset: 0; border-radius: 50%; background: #F6F1E6; display: flex; align-items: center; justify-content: center; }
+        .pj-hero-coffee { width: 78%; height: 78%; border-radius: 50%; background: radial-gradient(circle at 42% 38%, #C27A3E 0 22%, #6B2C1F 72%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #F3ECDD; }
+        .pj-hero-num { font: 900 clamp(44px, 7vw, 96px)/0.85 var(--tf); }
+        .pj-hero-left { font: 500 clamp(9px, 1vw, 12px) 'DM Mono', monospace; letter-spacing: .14em; }
+        .pj-last { position: absolute; left: clamp(16px, 3vw, 32px); bottom: clamp(16px, 3vw, 28px); display: flex; flex-direction: column; gap: 4px; color: #F3ECDD; }
+        .pj-last span { font: 500 11px 'DM Mono', monospace; letter-spacing: .14em; }
+        .pj-last b { font: 800 clamp(26px, 3.4vw, 44px)/0.95 var(--tf); text-transform: uppercase; max-width: 9em; }
+
+        .pj-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 2px solid #161210; }
+        .pj-btn { height: 52px; padding: 0 22px; display: inline-flex; align-items: center; border: 2px solid #161210; color: #161210; font: 700 16px 'Space Grotesk', sans-serif; text-decoration: none; }
+        .pj-btn-dark { padding: 0 24px; border: none; background: #161210; color: #F3ECDD; }
+        .pj-btn-dark:hover { background: #D2483A; }
+        .pj-btn-gold { background: #D9A441; }
+        .pj-btn-sage { background: #9DB0A8; }
+        .pj-link { height: 52px; padding: 0 6px; display: inline-flex; align-items: center; border: none; background: none; color: #161210; font: 700 15px 'Space Grotesk', sans-serif; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
+        .pj-link:hover { color: #D2483A; }
+
+        .pj-controls { display: flex; flex-direction: column; gap: 16px; margin-top: 36px; }
+        .pj-search { display: flex; align-items: center; gap: 14px; background: #F3ECDD; border: 3px solid #161210; padding: 0 22px; }
+        .pj-search span { font: 800 22px var(--tf); letter-spacing: .06em; }
+        .pj-search input { flex: 1; min-width: 0; height: 64px; border: none; outline: none; background: transparent; color: #161210; font: 500 20px 'Space Grotesk', sans-serif; }
+        .pj-search input:focus { box-shadow: none; }
+        .pj-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
+        .pj-filter-btn { height: 46px; padding: 0 18px; border: 2.5px solid #161210; background: #F3ECDD; color: #161210; font: 700 15px 'Space Grotesk', sans-serif; }
+        .pj-filter-btn.on { background: #161210; color: #F3ECDD; }
+        .pj-switch { display: flex; align-items: center; gap: 12px; background: none; border: none; padding: 0; color: #161210; font: 700 15px 'Space Grotesk', sans-serif; }
+        .pj-switch-track { width: 56px; height: 30px; border: 2.5px solid #161210; border-radius: 999px; background: #F3ECDD; position: relative; display: block; }
+        .pj-switch-track.on { background: #D9A441; }
+        .pj-switch-track span { position: absolute; top: 2px; left: 2px; width: 21px; height: 21px; border-radius: 50%; background: #161210; display: block; transition: left .2s; }
+        .pj-switch-track.on span { left: 28px; }
+        .pj-showing { margin-left: auto; font: 500 13px 'DM Mono', monospace; }
+        .pj-filters { display: grid; grid-template-columns: minmax(80px, 110px) minmax(0, 1fr); row-gap: 14px; padding: 22px 24px; background: #F3ECDD; border: 2.5px dashed #161210; }
+        .pj-filters-label { font: 800 22px/38px var(--tf); letter-spacing: .04em; }
+        .pj-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .pj-chip { height: 38px; padding: 0 14px; border: 2px solid #161210; background: #F3ECDD; color: #161210; font: 700 14px 'Space Grotesk', sans-serif; display: flex; align-items: center; gap: 8px; }
+        .pj-chip.on { background: #161210; color: #F3ECDD; }
+        .pj-chip i { width: 12px; height: 12px; border: 1.5px solid #161210; display: block; }
+
+        .pj-marquee { overflow: hidden; background: #161210; margin: 48px -20px 52px; padding: 14px 0 16px; transform: rotate(-1.5deg); }
+        .pj-marquee div { white-space: nowrap; font: 800 clamp(28px, 4vw, 46px)/1 var(--tf); letter-spacing: .06em; text-transform: uppercase; color: #D9A441; }
+
+        .pj-grid { max-width: 1180px; margin: 0 auto; padding: 0 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 36px 32px; }
+        .pj-empty { max-width: 1180px; margin: 0 auto; padding: 40px 20px; text-align: center; font: 800 clamp(26px, 4vw, 44px)/1 var(--tf); letter-spacing: .04em; text-transform: uppercase; }
+        .pj-empty button { margin-left: 12px; }
+        .pj-card { background: #F3ECDD; border: var(--fw, 12px) solid #161210; box-shadow: 0 18px 36px rgba(22,18,16,.2); padding: 18px 18px 16px; display: flex; flex-direction: column; opacity: var(--op, 1); cursor: pointer; }
+        .pj-card-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+        .pj-card-name { min-width: 0; overflow-wrap: break-word; font: 800 32px/0.9 var(--tf); letter-spacing: .03em; text-transform: uppercase; text-wrap: balance; }
+        .pj-card-no { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex: none; }
+        .pj-card-no > span { font: 800 22px/1 var(--tf); }
+        .pj-swatches { display: flex; gap: 3px; }
+        .pj-swatches i { width: 16px; height: 4px; display: block; }
+        .pj-tile { position: relative; margin-top: 12px; aspect-ratio: 1; overflow: hidden; }
+        .pj-tile-shadow { position: absolute; left: 50%; top: 27%; width: 110%; height: 46%; background: rgba(30,12,8,.22); transform-origin: 0 50%; transform: rotate(45deg); }
+        .pj-tile-cup { position: absolute; inset: 0; }
+        .pj-cup-handle { position: absolute; left: 68%; top: 46%; width: 13%; height: 8%; border-radius: 6px; background: #F6F1E6; }
+        .pj-cup-body { position: absolute; left: 27%; top: 27%; width: 46%; height: 46%; border-radius: 50%; background: #F6F1E6; box-shadow: inset 0 0 0 2px rgba(0,0,0,.04); }
+        .pj-cup-body > div { position: absolute; inset: 11%; border-radius: 50%; }
+        .pj-tile-proc { position: absolute; left: 12px; top: 12px; max-width: 58%; padding: 5px 9px; background: #F3ECDD; color: #161210; font: 500 10.5px/1.3 'DM Mono', monospace; letter-spacing: .04em; text-transform: uppercase; }
+        .pj-tile-rating { position: absolute; right: 12px; top: 12px; padding: 5px 9px; background: #161210; color: #F3ECDD; font: 500 10.5px/1.3 'DM Mono', monospace; letter-spacing: .04em; }
+        .pj-card-info { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 14px; padding: 14px 0; }
+        .pj-fields { display: flex; flex-direction: column; gap: 8px; }
+        .pj-field { display: flex; flex-direction: column; gap: 2px; font: 400 13.5px/1.35 'Space Grotesk', sans-serif; }
+        .pj-field b { font-weight: 700; }
+        .pj-label { align-self: flex-start; padding: 1px 5px; background: #161210; color: #F3ECDD; font: 500 9.5px 'DM Mono', monospace; letter-spacing: .12em; }
+        .pj-notes { display: flex; flex-direction: column; gap: 5px; }
+        .pj-note { font: 700 13.5px/1.25 'Space Grotesk', sans-serif; display: flex; gap: 7px; align-items: baseline; }
+        .pj-note i { width: 8px; height: 8px; border-radius: 50%; flex: none; display: block; }
+        .pj-more { font: 500 11px 'DM Mono', monospace; }
+        .pj-card-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: auto; padding-top: 12px; border-top: 2px solid #161210; }
+        .pj-log { font: 500 12px/1.35 'DM Mono', monospace; }
+        .pj-log-btn { height: 48px; padding: 0 14px 0 12px; border: 2px solid #161210; background: #F3ECDD; color: #161210; font: 700 14px 'Space Grotesk', sans-serif; display: flex; align-items: center; gap: 9px; flex: none; }
+        .pj-log-btn:hover { background: #161210; color: #F3ECDD; }
+        .pj-mug { width: 18px; height: 24px; border: 2.5px solid currentColor; border-top: none; border-radius: 0 0 4px 4px; position: relative; overflow: hidden; display: block; }
+        .pj-mug > span { position: absolute; left: 0; right: 0; bottom: 0; display: block; transition: height .4s cubic-bezier(.3,1.6,.5,1); }
+
+        .pj-stats { max-width: 1180px; margin: 0 auto; padding: 88px 20px 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 28px 22px; }
+        .pj-stat { display: flex; flex-direction: column; gap: 10px; }
+        .pj-stat-tile { position: relative; aspect-ratio: 1; overflow: hidden; border: 6px solid #161210; }
+        .pj-stat-shadow { position: absolute; left: 50%; top: 22%; width: 110%; height: 56%; background: rgba(30,12,8,.22); transform-origin: 0 50%; transform: rotate(45deg); }
+        .pj-stat-saucer { position: absolute; left: 22%; top: 22%; width: 56%; height: 56%; border-radius: 50%; background: #F6F1E6; display: flex; align-items: center; justify-content: center; }
+        .pj-stat-saucer div { width: 80%; height: 80%; border-radius: 50%; background: radial-gradient(circle at 42% 38%, #A8662B 0 18%, #3E1F14 75%); display: flex; align-items: center; justify-content: center; color: #F3ECDD; font: 900 clamp(34px, 4vw, 50px)/1 var(--tf); }
+        .pj-stat-label { font: 800 22px/1 var(--tf); letter-spacing: .05em; text-transform: uppercase; }
+        .pj-foot { max-width: 1180px; margin: 0 auto; padding: 0 20px 100px; display: flex; justify-content: flex-end; }
+        .pj-foot button { border: none; background: none; color: #161210; font: 500 12px 'DM Mono', monospace; letter-spacing: .06em; text-decoration: underline; text-underline-offset: 4px; }
+        .pj-foot button:hover { color: #D2483A; }
+
+        @media (max-width: 820px) {
+          .pj-art { aspect-ratio: auto; height: 260px; }
+        }
+        @media (max-width: 480px) {
+          .pj-title { font-size: 15vw; }
+          .pj-bar-title { font-size: 22px; }
+          .pj-bar:has(.pj-bar-add) .pj-bar-count { display: none; }
+          .pj-stats { grid-template-columns: 1fr 1fr; }
+        }
+
+        @keyframes bjspin { to { transform: rotate(360deg); } }
+        @keyframes bjrise { from { opacity: 0; transform: translateY(110px) rotate(-3deg) scale(.94); } to { opacity: var(--op, 1); transform: none; } }
+        @keyframes bjbar { from { opacity: 0; transform: translateY(-100%); visibility: hidden; } to { opacity: 1; transform: none; visibility: visible; } }
+        @keyframes bjfill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+        @keyframes bjpar { to { transform: translateY(-40px) scale(.9); opacity: 0; } }
+        @keyframes bjslide { from { transform: translateX(0); } to { transform: translateX(-45%); } }
+        @keyframes bjpop { from { opacity: 0; transform: scale(.4) rotate(-25deg); } to { opacity: 1; transform: none; } }
+        @keyframes bjshadow { from { transform: rotate(45deg) scaleX(0); } to { transform: rotate(45deg) scaleX(1); } }
+        @keyframes bjcup { from { transform: rotate(-120deg) scale(.7); } to { transform: none; } }
+        @media (prefers-reduced-motion: no-preference) {
+          @supports (animation-timeline: view()) {
+            .pj-bar { display: flex; animation: bjbar linear both; animation-timeline: scroll(root); animation-range: 420px 520px; }
+            .pj-bar-progress { animation: bjfill linear both; animation-timeline: scroll(root); }
+            .pj-hero-top { animation: bjpar linear both; animation-timeline: scroll(root); animation-range: 0 360px; }
+            .pj-ring { animation: bjspin linear both; animation-timeline: scroll(root); }
+            .pj-marquee div { animation: bjslide linear both; animation-timeline: scroll(root); }
+            .pj-card { animation: bjrise linear both; animation-timeline: view(); animation-range: entry 0% cover 30%; }
+            .pj-tile-shadow { animation: bjshadow linear both; animation-timeline: view(); animation-range: entry 20% cover 50%; }
+            .pj-tile-cup { animation: bjcup linear both; animation-timeline: view(); animation-range: entry 10% cover 45%; }
+            .pj-stat { animation: bjpop linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+          }
         }
       `}</style>
 
-      <div style={{ minHeight: "100vh", background: "#FAF7F2" }}>
-        {/* Header */}
-        <div className="header-wrap" style={{ background: "#FEFCF8", borderBottom: "1px solid #EDE5D8", padding: "32px 40px 24px", position: "sticky", top: 0, zIndex: 10 }}>
-          <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-            <div className="header-top" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
-                <h1 className="header-title" style={{ fontSize: "28px", fontWeight: "700", color: "#2C1810", fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>Bean Journal</h1>
-                <span className="bean-count" style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", overflow: "hidden", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif", border: "1px solid #EDE5D8" }}>
-                  <span style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px" }}>{beans.filter(b => b.available !== false).length}</span>
-                  <span style={{ background: "#EBEBEB", color: "#888", padding: "3px 10px" }}>{beans.length}</span>
-                </span>
-              </div>
-              <div className="header-actions" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <a href="/stats" className="find-btn"
-                  style={{ padding: "10px 18px", background: "#F0EAE0", border: "none", borderRadius: "12px", color: "#6B5039", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#E5D8C8"}
-                  onMouseLeave={e => e.currentTarget.style.background = "#F0EAE0"}
-                >📊 Stats</a>
-                <a href="/recommend" className="find-btn"
-                  style={{ padding: "10px 18px", background: "#F5EAD8", border: "none", borderRadius: "12px", color: "#8B4F1E", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#EDD8BB"}
-                  onMouseLeave={e => e.currentTarget.style.background = "#F5EAD8"}
-                >✨ Find My Bean</a>
-                {session ? (
-                  <>
-                    <button onClick={() => setShowAddForm(true)} className="add-btn"
-                      style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", background: "#2C1810", border: "none", borderRadius: "12px", color: "#FAF7F2", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
-                      onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                    ><span style={{ fontSize: "16px" }}>+</span> Add Bean</button>
-                    <button onClick={() => supabase.auth.signOut()} className="signout-btn"
-                      style={{ padding: "10px 16px", background: "transparent", border: "1px solid #EDE5D8", borderRadius: "12px", color: "#A0896B", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" }}
-                      onMouseEnter={e => e.currentTarget.style.borderColor = "#C4A882"}
-                      onMouseLeave={e => e.currentTarget.style.borderColor = "#EDE5D8"}
-                    >Sign out</button>
-                  </>
-                ) : (
-                  <a href="/login" className="signin-btn"
-                    style={{ padding: "10px 20px", background: "transparent", border: "1px solid #EDE5D8", borderRadius: "12px", color: "#6B5039", fontSize: "13px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", whiteSpace: "nowrap" }}
-                  >Sign in</a>
-                )}
+      <div className="pj">
+        <div className="pj-bar">
+          <span className="pj-bar-title">Bean Journal</span>
+          <span className="pj-bar-count">{availableCount} / {beans.length}</span>
+          <span style={{ flex: 1 }} />
+          {session && <button type="button" className="pj-bar-add" onClick={() => setShowAddForm(true)}>+ Add Bean</button>}
+          <div className="pj-bar-progress" />
+        </div>
+
+        <div className="pj-wrap">
+          <div className="pj-hero">
+            <div className="pj-hero-top">
+              <h1 className="pj-title">Bean Journal</h1>
+              <div className="pj-count">
+                <span className="pj-count-num">{availableCount}<span>/{beans.length}</span></span>
+                <div className="pj-count-bars"><i /><i /><i /></div>
+                <span className="pj-count-label">AVAILABLE · TOTAL</span>
               </div>
             </div>
-
-            <div className="search-area" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search beans, regions, varieties, flavours…"
-                style={{ width: "100%", padding: "10px 16px", border: "1px solid #EDE5D8", borderRadius: "12px", background: "#FAF7F2", fontSize: "13px", color: "#2C1810", fontFamily: "'DM Sans', sans-serif", outline: "none" }} />
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    onClick={toggleFiltersOpen}
-                    aria-expanded={filtersOpen}
-                    style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 12px", borderRadius: "20px", border: "1px solid", borderColor: filtersOpen || activeFilterCount > 0 ? "#2C1810" : "#EDE5D8", background: filtersOpen ? "#2C1810" : "transparent", color: filtersOpen ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}
-                  >
-                    Filters
-                    {activeFilterCount > 0 && (
-                      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "16px", height: "16px", padding: "0 4px", borderRadius: "9px", background: filtersOpen ? "#FAF7F2" : "#2C1810", color: filtersOpen ? "#2C1810" : "#FAF7F2", fontSize: "10px", fontWeight: "700" }}>{activeFilterCount}</span>
-                    )}
-                    <span style={{ fontSize: "9px", transform: filtersOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▾</span>
-                  </button>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <button
-                      type="button"
-                      onClick={toggleHideUnavailable}
-                      aria-label={hideUnavailable ? "Show ran out beans" : "Hide ran out beans"}
-                      style={{ width: "44px", height: "26px", borderRadius: "13px", border: "none", cursor: "pointer", background: hideUnavailable ? "#2C1810" : "#D1D5DB", position: "relative", transition: "background 0.2s", flexShrink: 0, padding: 0 }}
-                    >
-                      <span style={{ position: "absolute", top: "3px", left: hideUnavailable ? "21px" : "3px", width: "20px", height: "20px", borderRadius: "50%", background: "white", transition: "left 0.2s", display: "block", boxShadow: "0 1px 3px rgba(0,0,0,0.15)" }} />
-                    </button>
-                    <span style={{ fontSize: "12px", color: "#6B5039", fontFamily: "'DM Sans', sans-serif", fontWeight: "500", userSelect: "none" }}>
-                      Hide ran out{hiddenRanOutCount > 0 ? ` (${hiddenRanOutCount})` : ""}
-                    </span>
+            <div className="pj-art">
+              <div className="pj-art-shadow" />
+              <div className="pj-ring-anchor">
+                <div className="pj-ring">
+                  <svg viewBox="0 0 200 200" aria-hidden="true">
+                    <path id="heroRing" d="M100,100 m-92,0 a92,92 0 1,1 184,0 a92,92 0 1,1 -184,0" fill="none" />
+                    <text fill="#F3ECDD"><textPath href="#heroRing" textLength="575" lengthAdjust="spacing">✦ BEAN JOURNAL ✦ FRESH ROASTS ✦ CUP AFTER CUP ✦ GOOD BEANS ONLY </textPath></text>
+                  </svg>
+                </div>
+              </div>
+              <div className="pj-hero-cup">
+                <div className="pj-hero-handle" />
+                <div className="pj-hero-saucer">
+                  <div className="pj-hero-coffee">
+                    <span className="pj-hero-num">{availableCount}</span>
+                    <span className="pj-hero-left">BEANS LEFT</span>
                   </div>
                 </div>
-                <span className="bean-count-mobile" style={{ display: "none", alignItems: "center", borderRadius: "20px", overflow: "hidden", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif", border: "1px solid #EDE5D8" }}>
-                  <span style={{ background: "#F5EFE6", color: "#A0896B", padding: "3px 10px" }}>{beans.filter(b => b.available !== false).length}</span>
-                  <span style={{ background: "#EBEBEB", color: "#888", padding: "3px 10px" }}>{beans.length}</span>
-                </span>
               </div>
-              {filtersOpen && (
-                <>
-                  <div className="filter-row">
-                    {allProcesses.map(p => <button key={p} onClick={() => setProcessFilter(p)} style={{ padding: "8px 14px", borderRadius: "20px", border: "1px solid", borderColor: processFilter === p ? "#2C1810" : "#EDE5D8", background: processFilter === p ? "#2C1810" : "transparent", color: processFilter === p ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>{p}</button>)}
-                  </div>
-                  <div className="filter-row">
-                    {allRegions.map(r => <button key={r} onClick={() => setRegionFilter(r)} style={{ padding: "8px 14px", borderRadius: "20px", border: "1px solid", borderColor: regionFilter === r ? "#C4A882" : "#EDE5D8", background: regionFilter === r ? "#C4A882" : "transparent", color: regionFilter === r ? "#FAF7F2" : "#6B5039", fontSize: "12px", fontWeight: "500", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>{r}</button>)}
-                  </div>
-                </>
-              )}
+              <div className="pj-last">
+                <span>LAST CUP</span>
+                <b>{lastCupText}</b>
+              </div>
             </div>
+            <div className="pj-actions">
+              {session && <button type="button" className="pj-btn pj-btn-dark" onClick={() => setShowAddForm(true)}>+ Add Bean</button>}
+              <a href="/stats" className="pj-btn pj-btn-gold">Stats</a>
+              <a href="/recommend" className="pj-btn pj-btn-sage">Find My Bean</a>
+              <span style={{ flex: 1 }} />
+              {session
+                ? <button type="button" className="pj-link" onClick={() => supabase.auth.signOut()}>Sign out</button>
+                : <a href="/login" className="pj-link">Sign in</a>}
+            </div>
+          </div>
+
+          <div className="pj-controls">
+            <label className="pj-search">
+              <span>SEARCH</span>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="beans, regions, varieties, flavours…" />
+            </label>
+            <div className="pj-toolbar">
+              <button type="button" className={`pj-filter-btn${filtersOpen ? " on" : ""}`} onClick={toggleFiltersOpen} aria-expanded={filtersOpen}>
+                Filters {activeFilterCount > 0 ? `(${activeFilterCount}) ` : ""}{filtersOpen ? "–" : "+"}
+              </button>
+              <button type="button" className="pj-switch" role="switch" aria-checked={hideUnavailable} onClick={toggleHideUnavailable}>
+                <span className={`pj-switch-track${hideUnavailable ? " on" : ""}`}><span /></span>
+                Hide ran out{ranOutCount > 0 ? ` (${ranOutCount})` : ""}
+              </button>
+              <span className="pj-showing">SHOWING {String(filtered.length).padStart(2, "0")}</span>
+            </div>
+            {filtersOpen && (
+              <div className="pj-filters">
+                <span className="pj-filters-label">PROCESS</span>
+                <div className="pj-chips">
+                  {Object.entries(FAM).map(([key, fam]) => (
+                    <button type="button" key={key} className={`pj-chip${procFilter.includes(key) ? " on" : ""}`} onClick={() => setProcFilter(toggleIn(procFilter, key))}>
+                      <i style={{ background: fam.tile }} />{fam.label}
+                    </button>
+                  ))}
+                </div>
+                <span className="pj-filters-label">COUNTRY</span>
+                <div className="pj-chips">
+                  {allCountries.map(c => (
+                    <button type="button" key={c} className={`pj-chip${ctryFilter.includes(c) ? " on" : ""}`} onClick={() => setCtryFilter(toggleIn(ctryFilter, c))}>{c}</button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Grid */}
-        <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "32px 40px" }}>
-          {loading ? (
-            <div style={{ textAlign: "center", padding: "80px 0", color: "#A0896B", fontFamily: "'DM Sans', sans-serif" }}>Loading your beans…</div>
-          ) : filtered.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "80px 0", color: "#A0896B", fontFamily: "'DM Sans', sans-serif" }}>
-              {beans.length === 0
-                ? "No beans yet — add your first one!"
-                : hideUnavailable && beans.every(b => b.available === false)
-                ? <span>All beans have run out. <button onClick={toggleHideUnavailable} style={{ background: "none", border: "none", color: "#C4A882", fontFamily: "'DM Sans', sans-serif", fontSize: "inherit", cursor: "pointer", textDecoration: "underline", padding: 0 }}>Show them</button></span>
-                : "No beans match your search"}
-            </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
-              {filtered.map(bean => <BeanCard key={bean.id} bean={bean} onClick={setSelectedBean} drinkLog={drinkLogs[bean.id]} onLog={logCup} />)}
-            </div>
-          )}
+        <div className="pj-marquee"><div>{marquee || "Bean Journal  ✦  Good beans only  ✦  Bean Journal  ✦  Good beans only"}</div></div>
 
-          {beans.length > 0 && (
-            <div style={{ marginTop: "48px", paddingTop: "24px", borderTop: "1px solid #EDE5D8", display: "flex", gap: "32px", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between" }}>
+        {loading ? (
+          <div className="pj-empty">Loading your beans…</div>
+        ) : filtered.length === 0 ? (
+          <div className="pj-empty">
+            {beans.length === 0
+              ? "No beans yet. Add your first one!"
+              : hideUnavailable && beans.every(b => b.available === false)
+              ? <>All beans have run out.<button type="button" className="pj-link" onClick={toggleHideUnavailable}>Show them</button></>
+              : "No beans match your search"}
+          </div>
+        ) : (
+          <div className="pj-grid">
+            {filtered.map((bean, i) => <PosterCard key={bean.id} bean={bean} index={i} onClick={setSelectedBean} drinkLog={drinkLogs[bean.id]} onLog={logCup} />)}
+          </div>
+        )}
+
+        {beans.length > 0 && (
+          <>
+            <div className="pj-stats">
               {[
-                { label: "Total Beans", value: beans.length },
-                { label: "Available", value: beans.filter(b => b.available !== false).length },
-                { label: "Countries", value: uniqueCountries.size },
-                { label: "Process Types", value: new Set(beans.map(b => b.process).filter(Boolean)).size },
-                { label: "Rated", value: beans.filter(b => b.myRating > 0).length },
-              ].map(({ label, value }) => (
-                <div key={label}>
-                  <p style={{ fontSize: "11px", color: "#A0896B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px", fontFamily: "'DM Sans', sans-serif" }}>{label}</p>
-                  <p style={{ fontSize: "24px", fontWeight: "700", color: "#2C1810", fontFamily: "'Playfair Display', serif" }}>{value}</p>
+                { label: "Total beans", value: beans.length, tile: "#D2483A" },
+                { label: "Available", value: availableCount, tile: "#D9A441" },
+                { label: "Countries", value: allCountries.length, tile: "#9DB0A8" },
+                { label: "Process types", value: new Set(beans.map(b => b.process).filter(Boolean)).size, tile: "#D9A99B" },
+                { label: "Rated", value: beans.filter(b => b.myRating > 0).length, tile: "#A47B60" },
+              ].map(({ label, value, tile }) => (
+                <div key={label} className="pj-stat">
+                  <div className="pj-stat-tile" style={{ background: tile }}>
+                    <div className="pj-stat-shadow" />
+                    <div className="pj-stat-saucer"><div>{value}</div></div>
+                  </div>
+                  <span className="pj-stat-label">{label}</span>
                 </div>
               ))}
-              <button onClick={() => setShowHow(true)} style={{ fontSize: "11px", color: "#C4B99A", fontFamily: "'DM Sans', sans-serif", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.04em", padding: 0 }}
-                onMouseEnter={e => e.currentTarget.style.color = "#A0896B"}
-                onMouseLeave={e => e.currentTarget.style.color = "#C4B99A"}
-              >How this is built →</button>
             </div>
-          )}
-        </div>
+            <div className="pj-foot"><button type="button" onClick={() => setShowHow(true)}>How this is built →</button></div>
+          </>
+        )}
       </div>
 
       <DetailModal bean={selectedBean} onClose={() => setSelectedBean(null)} onEdit={bean => setEditBean(bean)} onDelete={handleDelete} onToggleAvailability={handleToggleAvailability} canEdit={!!session} />
