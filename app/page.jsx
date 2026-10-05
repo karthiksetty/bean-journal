@@ -519,11 +519,7 @@ export default function BeanDatabase() {
   const [showHow, setShowHow] = useState(false);
   const [drinkLogs, setDrinkLogs] = useState({}); // { beanId: { count, lastDays } }
   const [lastCup, setLastCup] = useState(null); // { beanId, days }
-  const [hideUnavailable, setHideUnavailable] = useState(() => {
-    if (typeof window === "undefined") return true;
-    const saved = localStorage.getItem("bj_hideUnavailable");
-    return saved === null ? true : saved === "true";
-  });
+  const [hideUnavailable, setHideUnavailable] = useState(true);
 
   const toggleHideUnavailable = () => {
     setHideUnavailable(prev => {
@@ -533,10 +529,7 @@ export default function BeanDatabase() {
     });
   };
 
-  const [filtersOpen, setFiltersOpen] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("bj_filtersOpen") === "true";
-  });
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const toggleFiltersOpen = () => {
     setFiltersOpen(prev => {
@@ -547,6 +540,9 @@ export default function BeanDatabase() {
   };
 
   useEffect(() => {
+    // Saved toggles are read after mount so the first render matches the server's.
+    setHideUnavailable(localStorage.getItem("bj_hideUnavailable") !== "false");
+    setFiltersOpen(localStorage.getItem("bj_filtersOpen") === "true");
     fetchBeans();
     fetchDrinkLogs();
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
@@ -665,6 +661,17 @@ export default function BeanDatabase() {
   const lastCupBean = lastCup ? beans.find(b => b.id === lastCup.beanId) : null;
   const lastCupText = lastCupBean ? `${lastCupBean.name} · ${lastDrunkLabel(lastCup.days)}` : "No cups yet";
 
+  // The hero banner takes the colours of the last cup's process family.
+  const heroFamKey = lastCupBean ? processFamily(lastCupBean.process) : "natural";
+  const heroFam = FAM[heroFamKey];
+  const artStyle = {
+    "--art-bg": heroFam.tile,
+    "--art-ink": ["honey", "washed", "coferment"].includes(heroFamKey) ? "#161210" : "#F3ECDD",
+    "--cof-a": heroFam.cof[0],
+    "--cof-b": heroFam.cof[1],
+    "--cof-ink": heroFamKey === "coferment" ? "#161210" : "#F3ECDD",
+  };
+
   const marqueeTags = [...new Set(filtered.flatMap(b => b.aroma))].slice(0, 30).join("  ✦  ");
   const marquee = marqueeTags && `${marqueeTags}  ✦  ${marqueeTags}`;
 
@@ -712,19 +719,19 @@ export default function BeanDatabase() {
         .pj-count-bars i:nth-child(3) { background: #9DB0A8; }
         .pj-count-label { font: 500 11px 'DM Mono', monospace; letter-spacing: .12em; }
 
-        .pj-art { position: relative; margin-top: 18px; background: #D2483A; aspect-ratio: 21 / 8; min-height: 260px; overflow: hidden; }
-        .pj-art-shadow { position: absolute; left: 68%; top: 22%; width: 110%; height: 56%; background: rgba(40,12,8,.24); transform-origin: 0 50%; transform: rotate(45deg); }
-        .pj-ring-anchor { position: absolute; left: 68%; top: 50%; width: 0; height: 0; }
-        .pj-ring { position: absolute; left: -210px; top: -210px; width: 420px; height: 420px; }
+        .pj-art { --h: clamp(230px, 24vw, 290px); --ring: calc(var(--h) - 24px); --cup: calc(var(--ring) * 0.6); --cy: 50%; position: relative; margin-top: 18px; background: var(--art-bg, #D2483A); height: var(--h); overflow: hidden; }
+        .pj-art-shadow { position: absolute; left: 68%; top: calc(var(--cy) - var(--cup) / 2); width: 110%; height: var(--cup); background: rgba(40,12,8,.24); transform-origin: 0 50%; transform: rotate(45deg); }
+        .pj-ring-anchor { position: absolute; left: 68%; top: var(--cy); width: 0; height: 0; }
+        .pj-ring { position: absolute; left: calc(var(--ring) / -2); top: calc(var(--ring) / -2); width: var(--ring); height: var(--ring); }
         .pj-ring svg { width: 100%; height: 100%; overflow: visible; }
-        .pj-ring text { font-family: 'DM Mono', monospace; font-weight: 500; font-size: 10.5px; }
-        .pj-hero-cup { position: absolute; left: 68%; top: 50%; width: min(28vw, 300px); aspect-ratio: 1; transform: translate(-50%, -50%); }
+        .pj-ring text { fill: var(--art-ink, #F3ECDD); font-family: 'DM Mono', monospace; font-weight: 500; font-size: 10.5px; }
+        .pj-hero-cup { position: absolute; left: 68%; top: var(--cy); width: var(--cup); aspect-ratio: 1; transform: translate(-50%, -50%); }
         .pj-hero-handle { position: absolute; right: -18%; top: 42%; width: 24%; height: 16%; border-radius: 10px; background: #F6F1E6; }
         .pj-hero-saucer { position: absolute; inset: 0; border-radius: 50%; background: #F6F1E6; display: flex; align-items: center; justify-content: center; }
-        .pj-hero-coffee { width: 78%; height: 78%; border-radius: 50%; background: radial-gradient(circle at 42% 38%, #C27A3E 0 22%, #6B2C1F 72%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #F3ECDD; }
-        .pj-hero-num { font: 900 clamp(44px, 7vw, 96px)/0.85 var(--tf); }
-        .pj-hero-left { font: 500 clamp(9px, 1vw, 12px) 'DM Mono', monospace; letter-spacing: .14em; }
-        .pj-last { position: absolute; left: clamp(16px, 3vw, 32px); bottom: clamp(16px, 3vw, 28px); display: flex; flex-direction: column; gap: 4px; color: #F3ECDD; }
+        .pj-hero-coffee { width: 78%; height: 78%; border-radius: 50%; background: radial-gradient(circle at 42% 38%, var(--cof-a, #C27A3E) 0 22%, var(--cof-b, #6B2C1F) 72%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--cof-ink, #F3ECDD); }
+        .pj-hero-num { font: 900 calc(var(--cup) * 0.34)/0.85 var(--tf); }
+        .pj-hero-left { font: 500 max(8px, calc(var(--cup) * 0.055)) 'DM Mono', monospace; letter-spacing: .14em; }
+        .pj-last { position: absolute; left: clamp(16px, 3vw, 32px); bottom: clamp(16px, 3vw, 28px); display: flex; flex-direction: column; gap: 4px; color: var(--art-ink, #F3ECDD); }
         .pj-last span { font: 500 11px 'DM Mono', monospace; letter-spacing: .14em; }
         .pj-last b { font: 800 clamp(26px, 3.4vw, 44px)/0.95 var(--tf); text-transform: uppercase; max-width: 9em; }
 
@@ -806,10 +813,8 @@ export default function BeanDatabase() {
         .pj-foot button { border: none; background: none; color: #161210; font: 500 12px 'DM Mono', monospace; letter-spacing: .06em; text-decoration: underline; text-underline-offset: 4px; }
         .pj-foot button:hover { color: #D2483A; }
 
-        @media (max-width: 820px) {
-          .pj-art { aspect-ratio: auto; height: 260px; }
-        }
         @media (max-width: 480px) {
+          .pj-art { --ring: calc(var(--h) - 90px); --cy: 38%; }
           .pj-title { font-size: 15vw; }
           .pj-bar-title { font-size: 22px; }
           .pj-bar:has(.pj-bar-add) .pj-bar-count { display: none; }
@@ -859,13 +864,13 @@ export default function BeanDatabase() {
                 <span className="pj-count-label">AVAILABLE · TOTAL</span>
               </div>
             </div>
-            <div className="pj-art">
+            <div className="pj-art" style={artStyle}>
               <div className="pj-art-shadow" />
               <div className="pj-ring-anchor">
                 <div className="pj-ring">
                   <svg viewBox="0 0 200 200" aria-hidden="true">
                     <path id="heroRing" d="M100,100 m-92,0 a92,92 0 1,1 184,0 a92,92 0 1,1 -184,0" fill="none" />
-                    <text fill="#F3ECDD"><textPath href="#heroRing" textLength="575" lengthAdjust="spacing">✦ BEAN JOURNAL ✦ FRESH ROASTS ✦ CUP AFTER CUP ✦ GOOD BEANS ONLY </textPath></text>
+                    <text><textPath href="#heroRing" textLength="575" lengthAdjust="spacing">✦ BEAN JOURNAL ✦ FRESH ROASTS ✦ CUP AFTER CUP ✦ GOOD BEANS ONLY </textPath></text>
                   </svg>
                 </div>
               </div>
