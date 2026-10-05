@@ -707,8 +707,7 @@ export default function BeanDatabase() {
           .filter-row::-webkit-scrollbar { display: none; }
           .filter-row button { white-space: nowrap; flex-shrink: 0; }
           .search-area { gap: 8px !important; }
-          .bean-count { display: none !important; }
-          .bean-count-mobile { display: inline-flex !important; }
+          .bean-count-mobile { display: none !important; }
         }
       `}</style>
 
