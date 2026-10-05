@@ -585,7 +585,7 @@ export default function BeanDatabase() {
 
   const fetchBeans = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("beans").select("*").order("created_at", { ascending: true });
+    const { data, error } = await supabase.from("beans").select("*").order("created_at", { ascending: false });
     if (!error) setBeans(data.map(dbToBean));
     setLoading(false);
   };
@@ -623,7 +623,7 @@ export default function BeanDatabase() {
 
   const handleAdd = async (bean) => {
     const { data, error } = await supabase.from("beans").insert([beanToDb(bean)]).select().single();
-    if (!error) setBeans(prev => [...prev, dbToBean(data)]);
+    if (!error) setBeans(prev => [dbToBean(data), ...prev]);
   };
 
   const handleEdit = async (bean) => {
@@ -694,7 +694,10 @@ export default function BeanDatabase() {
         }
         .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
         @media (max-width: 640px) {
-          .header-wrap { padding: 14px 16px 12px !important; }
+          .header-wrap { padding: 14px 16px 12px !important; position: static !important; }
+          .header-top { flex-wrap: wrap; gap: 10px; margin-bottom: 12px !important; }
+          .header-actions { flex: 1 1 100%; flex-wrap: wrap; gap: 6px !important; }
+          .header-actions > * { flex: 1 1 auto; justify-content: center; text-align: center; }
           .header-title { font-size: 20px !important; }
           .find-btn { padding: 8px 10px !important; font-size: 12px !important; gap: 4px !important; }
           .signin-btn { padding: 8px 12px !important; font-size: 12px !important; }
@@ -713,7 +716,7 @@ export default function BeanDatabase() {
         {/* Header */}
         <div className="header-wrap" style={{ background: "#FEFCF8", borderBottom: "1px solid #EDE5D8", padding: "32px 40px 24px", position: "sticky", top: 0, zIndex: 10 }}>
           <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+            <div className="header-top" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
                 <h1 className="header-title" style={{ fontSize: "28px", fontWeight: "700", color: "#2C1810", fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>Bean Journal</h1>
                 <span className="bean-count" style={{ display: "inline-flex", alignItems: "center", borderRadius: "20px", overflow: "hidden", fontSize: "12px", fontWeight: "500", fontFamily: "'DM Sans', sans-serif", border: "1px solid #EDE5D8" }}>
@@ -721,7 +724,7 @@ export default function BeanDatabase() {
                   <span style={{ background: "#EBEBEB", color: "#888", padding: "3px 10px" }}>{beans.length}</span>
                 </span>
               </div>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <div className="header-actions" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <a href="/stats" className="find-btn"
                   style={{ padding: "10px 18px", background: "#F0EAE0", border: "none", borderRadius: "12px", color: "#6B5039", fontSize: "13px", fontWeight: "600", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#E5D8C8"}
