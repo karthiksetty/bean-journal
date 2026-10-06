@@ -2,115 +2,104 @@
 import { useState } from "react";
 import Link from "next/link";
 import { supabase } from "../lib/supabase-browser";
+import { FAM, TAG_DOTS, processFamily } from "../lib/poster";
 
+const TILES = ["#D2483A", "#D9A441", "#9DB0A8", "#A47B60"];
 
-const processColors = {
-  "Washed":                   { bg: "#E8F0EC", text: "#3A6B52", dot: "#3A6B52" },
-  "Natural":                  { bg: "#F5EAD8", text: "#8B4F1E", dot: "#8B4F1E" },
-  "Co-fermented":             { bg: "#EAE4F0", text: "#5C4A7A", dot: "#5C4A7A" },
-  "Natural & Thermal Shock":  { bg: "#F0E8E0", text: "#7A4030", dot: "#7A4030" },
-  "Osmotic Dehydration":      { bg: "#E6EEF5", text: "#2D5A7A", dot: "#2D5A7A" },
-};
-
-const AROMA_CATEGORIES = [
-  { keywords: ["berry","blueberry","raspberry","strawberry","cherry","blackberry","cranberry","redcurrant","wine gum","red plum","wild cherry","sour cherry","sweet cherry"], bg: "#FFE4E8", text: "#C0344D" },
-  { keywords: ["citrus","orange","lime","lemon","grapefruit","tangerine","blood orange","yuzu","pink lemonade"], bg: "#FFF3CD", text: "#B45309" },
-  { keywords: ["tropical","mango","guava","lychee","passion","pineapple","papaya","coconut","watermelon","melon","yellow melon","watermelon candy","tropical sweet","tropical fruits"], bg: "#D1FAE5", text: "#065F46" },
-  { keywords: ["floral","rose","jasmine","blossom","orange blossom","hibiscus","lavender","elderflower"], bg: "#FCE7F3", text: "#9D174D" },
-  { keywords: ["chocolate","cocoa","cacao","dark chocolate","milk chocolate","mocha"], bg: "#3D1C02", text: "#F5D0A9" },
-  { keywords: ["caramel","toffee","brown sugar","molasses","honey","nougat","butterscotch","vanilla","cream","butter","cake","pie","biscuit","pastry","blueberry pie","raspberry ripple","ice cream"], bg: "#FEF3C7", text: "#92400E" },
-  { keywords: ["spice","nutmeg","cinnamon","cardamom","clove","pepper","ginger","sweet spices"], bg: "#FDE68A", text: "#78350F" },
-  { keywords: ["stone fruit","peach","apricot","plum","nectarine"], bg: "#FFEDD5", text: "#C2410C" },
-  { keywords: ["tea","black tea","green tea","oolong","iced tea","herbal"], bg: "#ECFDF5", text: "#047857" },
-  { keywords: ["wine","winey","ferment","cider","amaretto","cherry coke","tonka"], bg: "#EDE9FE", text: "#5B21B6" },
-  { keywords: ["nut","almond","hazelnut","walnut","peanut"], bg: "#F5F0E8", text: "#6B5039" },
-];
-
-function getAromaColor(aroma) {
-  const lower = aroma.toLowerCase();
-  for (const cat of AROMA_CATEGORIES) {
-    if (cat.keywords.some((k) => lower.includes(k))) return cat;
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Righteous&family=Space+Grotesk:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pr { min-height: 100vh; display: flex; flex-direction: column; color: #161210; font-family: 'Space Grotesk', sans-serif; --tf: 'Righteous'; background: #E9E3D6 url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix values=%220 0 0 0 0.1 0 0 0 0 0.07 0 0 0 0 0.05 0 0 0 0.22 0%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E'); }
+  .pr button { cursor: pointer; font-family: 'Space Grotesk', sans-serif; }
+  .pr-top { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 max(20px, calc((100% - 760px) / 2)); background: #161210; color: #F3ECDD; }
+  .pr-top a { color: #F3ECDD; text-decoration: none; font: 400 clamp(20px, 5vw, 28px)/1 var(--tf); letter-spacing: .06em; text-transform: uppercase; }
+  .pr-top a:hover { color: #D9A441; }
+  .pr-mono { font: 500 11px 'DM Mono', monospace; letter-spacing: .12em; text-transform: uppercase; }
+  .pr-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: clamp(24px, 5vw, 56px) 20px; }
+  .pr-frame { width: 100%; max-width: 720px; background: #F3ECDD; border: 12px solid #161210; box-shadow: 0 24px 50px rgba(22,18,16,.22); padding: clamp(18px, 4vw, 32px); animation: fadeIn .25s ease; }
+  .pr-progress { display: flex; align-items: center; gap: 6px; }
+  .pr-progress i { width: 34px; height: 5px; display: block; background: #F3ECDD; outline: 1.5px solid #161210; }
+  .pr-progress i.done { background: #161210; }
+  .pr-progress i.now { background: #D2483A; outline-color: #D2483A; }
+  .pr-progress span { margin-left: 8px; }
+  .pr-q { margin-top: 18px; font: 400 clamp(34px, 7vw, 60px)/0.92 var(--tf); letter-spacing: .03em; text-transform: uppercase; text-wrap: balance; }
+  .pr-sub { margin-top: 10px; font: 400 16px/1.4 'Space Grotesk', sans-serif; }
+  .pr-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 2px solid #161210; }
+  .pr-options.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pr-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 0 14px 14px; border: 2.5px solid #161210; background: #F3ECDD; color: #161210; text-align: left; }
+  .pr-opt i { align-self: stretch; height: 10px; margin: 0 -14px 8px; display: block; border-bottom: 2.5px solid #161210; }
+  .pr-opt b { font: 400 20px/1 var(--tf); letter-spacing: .04em; text-transform: uppercase; }
+  .pr-opt:hover, .pr-opt.on { background: #161210; color: #F3ECDD; }
+  .pr-back { margin-top: 18px; border: none; background: none; color: #161210; font: 700 14px 'Space Grotesk', sans-serif; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
+  .pr-back:hover { color: #D2483A; }
+  .pr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pr-chip { padding: 5px 9px; background: #161210; color: #F3ECDD; font: 500 10.5px/1.3 'DM Mono', monospace; letter-spacing: .04em; text-transform: uppercase; }
+  .pr-loading { display: flex; align-items: center; gap: 12px; margin-top: 18px; padding: 20px; border: 2.5px dashed #161210; }
+  .pr-spinner { width: 20px; height: 20px; border: 2.5px solid #161210; border-top-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+  .pr-bean { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px; margin-top: 18px; padding-top: 18px; border-top: 2px solid #161210; animation: fadeIn .4s ease; }
+  .pr-name { font: 400 clamp(30px, 6vw, 46px)/0.92 var(--tf); letter-spacing: .03em; text-transform: uppercase; text-wrap: balance; overflow-wrap: break-word; }
+  .pr-by { margin-top: 8px; font: 400 17px/1.1 var(--tf); letter-spacing: .05em; text-transform: uppercase; }
+  .pr-fields { display: grid; gap: 10px; margin-top: 16px; }
+  .pr-field { display: flex; flex-direction: column; gap: 3px; font: 400 14.5px/1.35 'Space Grotesk', sans-serif; }
+  .pr-label { align-self: flex-start; padding: 1px 5px; background: #161210; color: #F3ECDD; font: 500 9.5px 'DM Mono', monospace; letter-spacing: .12em; text-transform: uppercase; }
+  .pr-notes { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+  .pr-note { display: flex; gap: 7px; align-items: baseline; font: 700 14.5px/1.3 'Space Grotesk', sans-serif; }
+  .pr-note i { width: 8px; height: 8px; border-radius: 50%; flex: none; display: block; }
+  .pr-tile { position: relative; aspect-ratio: 1; overflow: hidden; align-self: start; }
+  .pr-tile-shadow { position: absolute; left: 50%; top: 27%; width: 110%; height: 46%; background: rgba(30,12,8,.22); transform-origin: 0 50%; transform: rotate(45deg); }
+  .pr-tile-handle { position: absolute; left: 68%; top: 46%; width: 13%; height: 8%; border-radius: 6px; background: #F6F1E6; }
+  .pr-tile-cup { position: absolute; left: 27%; top: 27%; width: 46%; height: 46%; border-radius: 50%; background: #F6F1E6; }
+  .pr-tile-cup div { position: absolute; inset: 11%; border-radius: 50%; }
+  .pr-tile-chips { position: absolute; left: 12px; top: 12px; right: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .pr-tile-chips span { padding: 5px 9px; background: #F3ECDD; font: 500 10.5px/1.3 'DM Mono', monospace; letter-spacing: .04em; text-transform: uppercase; }
+  .pr-tile-chips span.dark { background: #161210; color: #F3ECDD; }
+  .pr-why { margin-top: 18px; padding: 16px 18px; border: 2.5px dashed #161210; animation: fadeIn .3s ease; }
+  .pr-why p { margin-top: 10px; font: 400 16px/1.7 'Space Grotesk', sans-serif; white-space: pre-wrap; }
+  .pr-caret { display: inline-block; width: 2px; height: 16px; margin-left: 2px; background: #161210; vertical-align: middle; animation: blink .8s step-end infinite; }
+  .pr-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; animation: fadeIn .4s ease; }
+  .pr-btn { height: 52px; padding: 0 22px; display: inline-flex; align-items: center; border: 2px solid #161210; background: #F3ECDD; color: #161210; font: 700 16px 'Space Grotesk', sans-serif; text-decoration: none; }
+  .pr-btn:hover { background: #161210; color: #F3ECDD; }
+  .pr-btn.primary { background: #161210; color: #F3ECDD; }
+  .pr-btn.primary:hover { background: #D2483A; border-color: #D2483A; }
+  @media (max-width: 600px) {
+    .pr-options, .pr-options.three { grid-template-columns: minmax(0, 1fr); }
+    .pr-bean { grid-template-columns: minmax(0, 1fr); }
+    .pr-tile { order: -1; max-width: 300px; }
   }
-  return { bg: "#F5EFE6", text: "#8C7A68" };
-}
+`;
 
-function AromaTag({ label }) {
-  const { bg, text } = getAromaColor(label);
+function RecommendedBean({ bean }) {
+  const fam = FAM[processFamily(bean.process)];
+  const brand = bean.brand && bean.brand !== "—" ? bean.brand : "";
   return (
-    <span style={{ background: bg, color: text, padding: "3px 10px", borderRadius: "12px", fontSize: "12px", fontWeight: 500, fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" }}>
-      {label}
-    </span>
-  );
-}
-
-function ProcessBadge({ process }) {
-  const colors = processColors[process] || { bg: "#F5EFE6", text: "#8C7A68", dot: "#C4A882" };
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: colors.bg, color: colors.text, padding: "3px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: 600, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.02em" }}>
-      <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: colors.dot, flexShrink: 0 }} />
-      {process}
-    </span>
-  );
-}
-
-function CupRating({ value }) {
-  return (
-    <div style={{ display: "flex", gap: "3px" }}>
-      {[1,2,3,4,5].map(n => (
-        <span key={n} style={{ fontSize: "14px", opacity: n <= value ? 1 : 0.2 }}>☕</span>
-      ))}
-    </div>
-  );
-}
-
-function RecommendedBeanCard({ bean }) {
-  const accentColor = (processColors[bean.process] || { dot: "#C4A882" }).dot;
-  return (
-    <div style={{ background: "#FEFCF8", border: "1.5px solid #EDE5D8", borderRadius: "18px", padding: "24px", position: "relative", overflow: "hidden", marginBottom: "20px" }}>
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "4px", background: accentColor, borderRadius: "18px 18px 0 0" }} />
-
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "14px" }}>
-        <div>
-          <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 700, color: "#2C1810", fontFamily: "'Playfair Display', serif", letterSpacing: "-0.3px", lineHeight: 1.2 }}>
-            {bean.name}
-          </h2>
-          {(bean.brand && bean.brand !== "—") || bean.producer ? (
-            <p style={{ margin: 0, fontSize: "13px", color: "#A0896B", fontFamily: "'DM Sans', sans-serif" }}>
-              {bean.brand && bean.brand !== "—" ? bean.brand : ""}
-              {bean.brand && bean.brand !== "—" && bean.producer ? " · " : ""}
-              {bean.producer}
-            </p>
-          ) : null}
+    <div className="pr-bean">
+      <div>
+        <h2 className="pr-name">{bean.name}</h2>
+        {brand && <div className="pr-by">by {brand}</div>}
+        <div className="pr-fields">
+          {bean.producer && <div className="pr-field"><span className="pr-label">Producer</span><span>{bean.producer}</span></div>}
+          {bean.region?.length > 0 && <div className="pr-field"><span className="pr-label">Origin</span><span>{bean.region.join(" · ")}</span></div>}
+          {bean.variety?.length > 0 && <div className="pr-field"><span className="pr-label">Variety</span><span>{bean.variety.join(" · ")}</span></div>}
+          {bean.aroma?.length > 0 && (
+            <div className="pr-field">
+              <span className="pr-label">Flavours</span>
+              <div className="pr-notes">{bean.aroma.map((a, i) => <span key={a} className="pr-note"><i style={{ background: TAG_DOTS[i % 4] }} />{a}</span>)}</div>
+            </div>
+          )}
+          {bean.notes && <div className="pr-field"><span className="pr-label">Notes</span><span>{bean.notes}</span></div>}
         </div>
-        {bean.my_rating > 0 && <CupRating value={bean.my_rating} />}
       </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "14px" }}>
-        {bean.region?.length > 0 && (
-          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
-            <span style={{ fontSize: "13px", color: "#8C7A68", fontFamily: "'DM Sans', sans-serif" }}>📍</span>
-            <span style={{ fontSize: "13px", color: "#8C7A68", fontFamily: "'DM Sans', sans-serif" }}>{bean.region.join(" · ")}</span>
-          </div>
-        )}
-        {bean.variety?.length > 0 && (
-          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
-            <span style={{ fontSize: "13px", color: "#8C7A68", fontFamily: "'DM Sans', sans-serif" }}>🌱</span>
-            <span style={{ fontSize: "13px", color: "#8C7A68", fontFamily: "'DM Sans', sans-serif" }}>{bean.variety.join(" · ")}</span>
-          </div>
-        )}
-      </div>
-
-      {bean.aroma?.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "14px" }}>
-          {bean.aroma.map(a => <AromaTag key={a} label={a} />)}
+      <div className="pr-tile" style={{ background: fam.tile }}>
+        <div className="pr-tile-shadow" />
+        <div className="pr-tile-handle" />
+        <div className="pr-tile-cup"><div style={{ background: `radial-gradient(circle at 42% 38%,${fam.cof[0]} 0 22%,${fam.cof[1]} 74%)` }} /></div>
+        <div className="pr-tile-chips">
+          {bean.process && <span>{bean.process}</span>}
+          {bean.my_rating > 0 && <span className="dark">★ {bean.my_rating}/5</span>}
         </div>
-      )}
-
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        {bean.process && <ProcessBadge process={bean.process} />}
-        {bean.notes ? (
-          <span style={{ fontSize: "12px", color: "#A0896B", fontFamily: "'DM Sans', sans-serif", fontStyle: "italic", maxWidth: "60%", textAlign: "right" }}>{bean.notes}</span>
-        ) : null}
       </div>
     </div>
   );
@@ -122,10 +111,10 @@ const STEPS = [
     question: "When are you brewing?",
     subtitle: "The time of day shapes everything.",
     options: [
-      { value: "Early morning (before 9am)", label: "Early Morning", icon: "🌅", sub: "Before 9am" },
-      { value: "Morning (9am–12pm)", label: "Morning", icon: "☀️", sub: "9am – 12pm" },
-      { value: "Afternoon (12pm–5pm)", label: "Afternoon", icon: "🌤", sub: "12pm – 5pm" },
-      { value: "Evening (after 5pm)", label: "Evening", icon: "🌙", sub: "After 5pm" },
+      { value: "Early morning (before 9am)", label: "Early Morning", sub: "Before 9am" },
+      { value: "Morning (9am–12pm)", label: "Morning", sub: "9am – 12pm" },
+      { value: "Afternoon (12pm–5pm)", label: "Afternoon", sub: "12pm – 5pm" },
+      { value: "Evening (after 5pm)", label: "Evening", sub: "After 5pm" },
     ],
   },
   {
@@ -133,10 +122,10 @@ const STEPS = [
     question: "What's your flavor mood?",
     subtitle: "Trust your instincts right now.",
     options: [
-      { value: "Fruity and bright — I want something lively and acidic", label: "Fruity & Bright", icon: "🍓", sub: "Lively, acidic, juicy" },
-      { value: "Chocolatey and rich — deep, roasty warmth", label: "Chocolatey & Rich", icon: "🍫", sub: "Deep, warm, roasty" },
-      { value: "Floral and delicate — something light and aromatic", label: "Floral & Delicate", icon: "🌸", sub: "Light, aromatic, tea-like" },
-      { value: "Wild and funky — experimental, fermented, unusual", label: "Wild & Funky", icon: "🧪", sub: "Fermented, adventurous" },
+      { value: "Fruity and bright — I want something lively and acidic", label: "Fruity & Bright", sub: "Lively, acidic, juicy" },
+      { value: "Chocolatey and rich — deep, roasty warmth", label: "Chocolatey & Rich", sub: "Deep, warm, roasty" },
+      { value: "Floral and delicate — something light and aromatic", label: "Floral & Delicate", sub: "Light, aromatic, tea-like" },
+      { value: "Wild and funky — experimental, fermented, unusual", label: "Wild & Funky", sub: "Fermented, adventurous" },
     ],
   },
   {
@@ -144,9 +133,9 @@ const STEPS = [
     question: "How intense?",
     subtitle: "How much of a kick are you after?",
     options: [
-      { value: "Light and delicate — I want to taste every nuance", label: "Light & Nuanced", icon: "🪶", sub: "Every note, gently" },
-      { value: "Medium and balanced — satisfying but not overwhelming", label: "Medium & Balanced", icon: "⚖️", sub: "Solid, well-rounded" },
-      { value: "Bold and intense — full extraction, strong flavors", label: "Bold & Intense", icon: "🔥", sub: "Full extraction, strong" },
+      { value: "Light and delicate — I want to taste every nuance", label: "Light & Nuanced", sub: "Every note, gently" },
+      { value: "Medium and balanced — satisfying but not overwhelming", label: "Medium & Balanced", sub: "Solid, well-rounded" },
+      { value: "Bold and intense — full extraction, strong flavors", label: "Bold & Intense", sub: "Full extraction, strong" },
     ],
   },
 ];
@@ -257,48 +246,26 @@ export default function RecommendPage() {
   const isResultView = loading || text || recommendedBean;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FAF7F2", display: "flex", flexDirection: "column", fontFamily: "'DM Sans', sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
-
-      {/* Header */}
-      <header style={{ padding: "20px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #EDE5D8", background: "#FEFCF8" }}>
-        <Link href="/collection" style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", fontWeight: 700, color: "#2C1810", textDecoration: "none", letterSpacing: "-0.3px" }}>
-          Bean Journal
-        </Link>
-        <span style={{ fontSize: "12px", color: "#9B8B7A", fontWeight: 600, letterSpacing: "1px", textTransform: "uppercase" }}>
-          Bean Finder
-        </span>
+    <div className="pr">
+      <style>{css}</style>
+      <header className="pr-top">
+        <Link href="/collection">Bean Journal</Link>
+        <span className="pr-mono">Find my bean</span>
       </header>
-
-      {/* Main */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px" }}>
-        <div style={{ width: "100%", maxWidth: "600px" }}>
-          {isResultView ? (
-            <ResultView
-              loading={loading}
-              bean={recommendedBean}
-              text={text}
-              done={done}
-              answers={answers}
-              onRestart={restart}
-            />
-          ) : (
-            <QuizStep
-              step={step}
-              totalSteps={STEPS.length}
-              currentStep={currentStep}
-              selected={answers[currentStep.id]}
-              onSelect={selectOption}
-              onBack={step > 0 ? () => setStep(step - 1) : null}
-            />
-          )}
-        </div>
+      <main className="pr-main">
+        {isResultView ? (
+          <ResultView loading={loading} bean={recommendedBean} text={text} done={done} answers={answers} onRestart={restart} />
+        ) : (
+          <QuizStep
+            key={step}
+            step={step}
+            totalSteps={STEPS.length}
+            currentStep={currentStep}
+            selected={answers[currentStep.id]}
+            onSelect={selectOption}
+            onBack={step > 0 ? () => setStep(step - 1) : null}
+          />
+        )}
       </main>
     </div>
   );
@@ -306,47 +273,23 @@ export default function RecommendPage() {
 
 function QuizStep({ step, totalSteps, currentStep, selected, onSelect, onBack }) {
   return (
-    <div style={{ animation: "fadeIn 0.25s ease" }}>
-      {/* Step dots */}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "36px", justifyContent: "center" }}>
-        {Array.from({ length: totalSteps }).map((_, i) => (
-          <div key={i} style={{ width: i === step ? "24px" : "8px", height: "8px", borderRadius: "4px", background: i < step ? "#C4A882" : i === step ? "#2C1810" : "#EDE5D8", transition: "all 0.3s ease" }} />
+    <div className="pr-frame">
+      <div className="pr-progress">
+        {Array.from({ length: totalSteps }).map((_, i) => <i key={i} className={i < step ? "done" : i === step ? "now" : ""} />)}
+        <span className="pr-mono">Step {step + 1} of {totalSteps}</span>
+      </div>
+      <h1 className="pr-q">{currentStep.question}</h1>
+      <p className="pr-sub">{currentStep.subtitle}</p>
+      <div className={`pr-options${currentStep.options.length === 3 ? " three" : ""}`}>
+        {currentStep.options.map((opt, i) => (
+          <button type="button" key={opt.value} className={`pr-opt${selected === opt.value ? " on" : ""}`} aria-pressed={selected === opt.value} onClick={() => onSelect(opt.value)}>
+            <i style={{ background: TILES[i % 4] }} />
+            <b>{opt.label}</b>
+            <span className="pr-mono">{opt.sub}</span>
+          </button>
         ))}
       </div>
-
-      <div style={{ textAlign: "center", marginBottom: "40px" }}>
-        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", fontWeight: 700, color: "#2C1810", margin: "0 0 8px", letterSpacing: "-0.5px", lineHeight: 1.2 }}>
-          {currentStep.question}
-        </h1>
-        <p style={{ fontSize: "15px", color: "#9B8B7A", margin: 0 }}>{currentStep.subtitle}</p>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: currentStep.options.length === 3 ? "1fr 1fr 1fr" : "1fr 1fr", gap: "12px", marginBottom: "28px" }}>
-        {currentStep.options.map(opt => {
-          const isSelected = selected === opt.value;
-          return (
-          <button key={opt.value} onClick={() => onSelect(opt.value)}
-            style={{ background: isSelected ? "#FDF8F0" : "#FEFCF8", border: `1.5px solid ${isSelected ? "#C4A882" : "#EDE5D8"}`, borderRadius: "16px", padding: "20px 16px", cursor: "pointer", textAlign: "center", transition: "all 0.15s ease", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", boxShadow: isSelected ? "0 4px 16px rgba(44,24,16,0.08)" : "none" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "#C4A882"; e.currentTarget.style.background = "#FDF8F0"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(44,24,16,0.08)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = isSelected ? "#C4A882" : "#EDE5D8"; e.currentTarget.style.background = isSelected ? "#FDF8F0" : "#FEFCF8"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = isSelected ? "0 4px 16px rgba(44,24,16,0.08)" : "none"; }}
-          >
-            <span style={{ fontSize: "28px", lineHeight: 1 }}>{opt.icon}</span>
-            <span style={{ fontSize: "14px", fontWeight: 600, color: "#2C1810", lineHeight: 1.2 }}>{opt.label}</span>
-            <span style={{ fontSize: "12px", color: "#9B8B7A", lineHeight: 1.3 }}>{opt.sub}</span>
-          </button>
-          );
-        })}
-      </div>
-
-      {onBack && (
-        <div style={{ textAlign: "center" }}>
-          <button onClick={onBack}
-            style={{ background: "none", border: "none", color: "#9B8B7A", fontSize: "14px", cursor: "pointer", padding: "8px 16px" }}
-            onMouseEnter={e => e.currentTarget.style.color = "#2C1810"}
-            onMouseLeave={e => e.currentTarget.style.color = "#9B8B7A"}
-          >← Back</button>
-        </div>
-      )}
+      {onBack && <button type="button" className="pr-back" onClick={onBack}>← Back</button>}
     </div>
   );
 }
@@ -356,69 +299,28 @@ function ResultView({ loading, bean, text, done, answers, onRestart }) {
   const intensityLabel = answers.intensity?.split("—")[0]?.trim() || "";
 
   return (
-    <div style={{ animation: "fadeIn 0.3s ease" }}>
-      {/* Preference chips */}
-      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", marginBottom: "28px" }}>
-        {[answers.timeOfDay, moodLabel, intensityLabel].map((tag, i) =>
-          tag && (
-            <span key={i} style={{ background: "#F5EAD8", color: "#8B4F1E", fontSize: "12px", fontWeight: 600, padding: "4px 12px", borderRadius: "20px" }}>
-              {tag}
-            </span>
-          )
-        )}
+    <div className="pr-frame">
+      <div className="pr-chips">
+        {[answers.timeOfDay, moodLabel, intensityLabel].map((tag, i) => tag && <span key={i} className="pr-chip">{tag}</span>)}
       </div>
 
-      {/* Loading state */}
-      {loading && !bean && (
-        <div style={{ background: "#FEFCF8", border: "1.5px solid #EDE5D8", borderRadius: "18px", padding: "32px", textAlign: "center" }}>
-          <BrewingSpinner />
-          <p style={{ marginTop: "14px", color: "#9B8B7A", fontSize: "15px" }}>Finding your perfect bean…</p>
-        </div>
-      )}
+      {loading && !bean && <div className="pr-loading"><span className="pr-spinner" /><span className="pr-mono">Finding your bean…</span></div>}
 
-      {/* Bean card */}
-      {bean && (
-        <div style={{ animation: "fadeIn 0.4s ease" }}>
-          <RecommendedBeanCard bean={bean} />
-        </div>
-      )}
+      {bean && <RecommendedBean bean={bean} />}
 
-      {/* Recommendation text */}
       {text && (
-        <div style={{ background: "#FEFCF8", border: "1.5px solid #EDE5D8", borderRadius: "18px", padding: "28px", marginBottom: "24px", animation: "fadeIn 0.3s ease" }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "11px", fontWeight: 600, color: "#C4A882", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "14px" }}>
-            Why this bean
-          </div>
-          <p style={{ fontSize: "15px", lineHeight: 1.8, color: "#2C1810", margin: 0, whiteSpace: "pre-wrap" }}>
-            {text}
-            {!done && (
-              <span style={{ display: "inline-block", width: "2px", height: "15px", background: "#C4A882", marginLeft: "2px", verticalAlign: "middle", animation: "blink 0.8s step-end infinite" }} />
-            )}
-          </p>
+        <div className="pr-why">
+          <span className="pr-label">Why this bean</span>
+          <p>{text}{!done && <span className="pr-caret" />}</p>
         </div>
       )}
 
-      {/* Actions */}
       {done && (
-        <div style={{ display: "flex", gap: "12px", justifyContent: "center", animation: "fadeIn 0.4s ease" }}>
-          <button onClick={onRestart}
-            style={{ background: "#2C1810", color: "#FAF7F2", border: "none", borderRadius: "12px", padding: "12px 24px", fontSize: "14px", fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "opacity 0.15s" }}
-            onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
-            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-          >Try Again</button>
-          <Link href="/collection"
-            style={{ background: "transparent", color: "#2C1810", border: "1.5px solid #EDE5D8", borderRadius: "12px", padding: "12px 24px", fontSize: "14px", fontWeight: 600, textDecoration: "none", fontFamily: "'DM Sans', sans-serif", display: "inline-block", transition: "border-color 0.15s" }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = "#C4A882"}
-            onMouseLeave={e => e.currentTarget.style.borderColor = "#EDE5D8"}
-          >Back to Collection</Link>
+        <div className="pr-actions">
+          <button type="button" className="pr-btn primary" onClick={onRestart}>Try again</button>
+          <Link href="/collection" className="pr-btn">Back to collection</Link>
         </div>
       )}
     </div>
-  );
-}
-
-function BrewingSpinner() {
-  return (
-    <span style={{ display: "inline-block", width: "24px", height: "24px", border: "2px solid #EDE5D8", borderTopColor: "#C4A882", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
   );
 }

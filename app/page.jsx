@@ -145,7 +145,7 @@ const css = `
 
   @media (max-width: 760px) {
     .pp-hero { grid-template-columns: minmax(0, 1fr); }
-    .pp-hero .pp-tile { order: -1; aspect-ratio: 16 / 10; }
+    .pp-hero .pp-tile { order: -1; }
   }
 `;
 
