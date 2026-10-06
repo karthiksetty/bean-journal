@@ -148,6 +148,7 @@ const css = `
   .pp-card .pp-field, .pp-card .pp-note { font-size: 13px; }
   .pp-foot { margin-top: auto; padding-top: 10px; border-top: 2px solid #161210; font: 500 11.5px 'DM Mono', monospace; }
   .pp-foot-links { display: flex; justify-content: flex-end; align-items: baseline; flex-wrap: wrap; gap: 8px 24px; margin-top: 40px; }
+  .pp-foot-links .pp-home { margin-right: auto; }
   .pp .pp-foot-links a { font: 500 12px 'DM Mono', monospace; letter-spacing: .06em; text-decoration: underline; text-underline-offset: 4px; }
   .pp-empty { padding: 60px 0; text-align: center; font: 400 clamp(26px, 4vw, 44px)/1 var(--tf); letter-spacing: .04em; text-transform: uppercase; }
 
@@ -191,7 +192,7 @@ export default async function PublicPage() {
               ))}
             </>
           )}
-          <div className="pp-foot-links"><a href="/collection">My collection</a><HowBuilt /></div>
+          <div className="pp-foot-links"><a className="pp-home" href="https://setty.in">setty.in</a><a href="/collection">My collection</a><HowBuilt /></div>
         </div>
       </div>
     </>
