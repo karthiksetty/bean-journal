@@ -5,6 +5,7 @@ import { FAM, TAG_DOTS, processFamily, lastDrunkLabel } from "../lib/poster";
 import DetailModal from "./DetailModal";
 import AddBeanModal from "./BeanForm";
 import HowBuilt from "../lib/HowBuilt";
+import { dbToBean, beanToDb } from "../lib/beans";
 
 
 const INITIAL_BEANS = [
@@ -152,47 +153,9 @@ export default function BeanDatabase() {
   const fetchBeans = async () => {
     setLoading(true);
     const { data, error } = await supabase.from("beans").select("*").order("created_at", { ascending: false });
-    if (!error) {
-      const loaded = data.map(dbToBean);
-      setBeans(loaded);
-      const linked = Number(new URLSearchParams(window.location.search).get("bean"));
-      if (linked) setSelectedBean(loaded.find(b => b.id === linked) || null);
-    }
+    if (!error) setBeans(data.map(dbToBean));
     setLoading(false);
   };
-
-  // Convert DB row (snake_case) to app bean (camelCase)
-  const dbToBean = (row) => ({
-    id: row.id,
-    name: row.name,
-    brand: row.brand || "",
-    producer: row.producer || "",
-    region: row.region || [],
-    variety: row.variety || [],
-    process: row.process || "",
-    bean: row.bean || "Arabica",
-    aroma: row.aroma || [],
-    myRating: row.my_rating || 0,
-    notes: row.notes || "",
-    website: row.website || "",
-    available: row.available !== false,
-  });
-
-  // Convert app bean to DB row
-  const beanToDb = (bean) => ({
-    name: bean.name,
-    brand: bean.brand,
-    producer: bean.producer,
-    region: bean.region,
-    variety: bean.variety,
-    process: bean.process,
-    bean: bean.bean,
-    aroma: bean.aroma,
-    my_rating: bean.myRating,
-    notes: bean.notes,
-    website: bean.website || null,
-    available: bean.available !== false,
-  });
 
   const handleAdd = async (bean) => {
     const { data, error } = await supabase.from("beans").insert([beanToDb(bean)]).select().single();

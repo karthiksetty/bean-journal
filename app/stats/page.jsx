@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase-browser";
 import { FAM, processFamily, lastDrunkLabel } from "../lib/poster";
 import HowBuilt from "../lib/HowBuilt";
+import { dbToBean, beanToDb } from "../lib/beans";
+import DetailModal from "../collection/DetailModal";
+import AddBeanModal from "../collection/BeanForm";
 
 const AROMA_CATEGORIES = [
   { label: "Berry & Cherry",   color: "#D2483A", keywords: ["berry","blueberry","raspberry","strawberry","cherry","blackberry","cranberry","redcurrant","wine gum","red plum","wild cherry","sour cherry","sweet cherry"] },
@@ -47,6 +50,8 @@ const longest = name => ({ "--w": Math.max(...(name || "None").split(/\s+/).map(
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Righteous&family=Space+Grotesk:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
   .ps { min-height: 100vh; color: #161210; font-family: 'Space Grotesk', sans-serif; --tf: 'Righteous'; background: #E9E3D6 url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix values=%220 0 0 0 0.1 0 0 0 0 0.07 0 0 0 0 0.05 0 0 0 0.22 0%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E'); }
   .ps button { cursor: pointer; font-family: 'Space Grotesk', sans-serif; }
   .ps-top { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 max(20px, calc((100% - 1180px) / 2)); background: #161210; color: #F3ECDD; }
@@ -104,8 +109,8 @@ const css = `
   .ps-rate button:hover span, .ps-rate button:has(~ button:hover) span { background: #D9A441; }
 
   .ps-next { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
-  .ps-next a { display: block; padding: 0 12px 12px; border: 2.5px solid #161210; color: #161210; text-decoration: none; }
-  .ps-next a:hover { background: #161210; color: #F3ECDD; }
+  .ps-next button { display: block; padding: 0 12px 12px; border: 2.5px solid #161210; background: none; color: #161210; text-align: left; }
+  .ps-next button:hover { background: #161210; color: #F3ECDD; }
   .ps-next i { display: block; height: 10px; margin: 0 -12px 10px; border-bottom: 2.5px solid #161210; }
   .ps-next b { display: block; font: 400 18px/1 var(--tf); letter-spacing: .04em; text-transform: uppercase; overflow-wrap: break-word; }
   .ps-next small { display: block; margin-top: 6px; font: 500 11px 'DM Mono', monospace; }
@@ -129,21 +134,44 @@ export default function StatsPage() {
   const [logs, setLogs] = useState([]);
   const [range, setRange] = useState("month");
   const [loading, setLoading] = useState(true);
+  const [openId, setOpenId] = useState(null);
+  const [editBean, setEditBean] = useState(null);
 
   useEffect(() => {
     Promise.all([
-      supabase.from("beans").select("id, name, brand, process, region, aroma, available, my_rating"),
+      supabase.from("beans").select("*"),
       supabase.from("drink_logs").select("bean_id, logged_at").order("logged_at", { ascending: false }),
     ]).then(([{ data: beanData }, { data: logData }]) => {
-      setBeans(beanData || []);
+      setBeans((beanData || []).map(dbToBean));
       setLogs(logData || []);
       setLoading(false);
     });
   }, []);
 
+  const patchBean = (id, changes) => setBeans(prev => prev.map(b => b.id === id ? { ...b, ...changes } : b));
+
   const rate = async (bean, rating) => {
     const { error } = await supabase.from("beans").update({ my_rating: rating }).eq("id", bean.id);
-    if (!error) setBeans(prev => prev.map(b => b.id === bean.id ? { ...b, my_rating: rating } : b));
+    if (!error) patchBean(bean.id, { myRating: rating });
+  };
+
+  const toggleAvailability = async (bean) => {
+    const available = bean.available === false;
+    const { error } = await supabase.from("beans").update({ available }).eq("id", bean.id);
+    if (!error) patchBean(bean.id, { available });
+  };
+
+  const saveEdit = async (bean) => {
+    const { error } = await supabase.from("beans").update(beanToDb(bean)).eq("id", bean.id);
+    if (!error) patchBean(bean.id, bean);
+  };
+
+  const deleteBean = async (id) => {
+    const { error } = await supabase.from("beans").delete().eq("id", id);
+    if (!error) {
+      setBeans(prev => prev.filter(b => b.id !== id));
+      setOpenId(null);
+    }
   };
 
   const frame = content => (
@@ -229,14 +257,15 @@ export default function StatsPage() {
 
   // Ratings
   const withCups = beans.map(b => ({ bean: b, cups: allCups[b.id] || 0 }));
-  const rated = withCups.filter(x => x.bean.my_rating > 0);
+  const rated = withCups.filter(x => x.bean.myRating > 0);
   const topRated = [...rated].sort((a, b) => b.bean.my_rating - a.bean.my_rating || b.cups - a.cups).slice(0, TOP);
-  const toRate = withCups.filter(x => !(x.bean.my_rating > 0) && x.cups > 0).sort((a, b) => b.cups - a.cups).slice(0, TOP);
+  const toRate = withCups.filter(x => !(x.bean.myRating > 0) && x.cups > 0).sort((a, b) => b.cups - a.cups).slice(0, TOP);
   const sub = x => [roasterOf(x.bean), `${x.cups} cup${x.cups === 1 ? "" : "s"}`].filter(Boolean).join(" · ");
 
   // Drink next: in stock and not drunk for a week or more, never-logged first
   const lastDrunk = {};
   for (const l of logs) if (!lastDrunk[l.bean_id]) lastDrunk[l.bean_id] = l.logged_at;
+  const openBean = beans.find(b => b.id === openId) || null;
   const drinkNext = beans
     .filter(b => b.available !== false)
     .map(b => ({ bean: b, days: lastDrunk[b.id] ? daysSince(lastDrunk[b.id]) : null }))
@@ -310,7 +339,7 @@ export default function StatsPage() {
           {topRated.length === 0 ? <p className="ps-none">No beans rated yet</p> : topRated.map(x => (
             <div className="ps-row" key={x.bean.id}>
               <div><b>{x.bean.name}</b><small>{sub(x)}</small></div>
-              <span className="ps-chip">★ {x.bean.my_rating}/5</span>
+              <span className="ps-chip">★ {x.bean.myRating}/5</span>
             </div>
           ))}
         </div>
@@ -332,17 +361,29 @@ export default function StatsPage() {
         {drinkNext.length === 0 ? <p className="ps-none">You're on top of everything in stock</p> : (
           <div className="ps-next">
             {drinkNext.map(x => (
-              <a key={x.bean.id} href={`/collection?bean=${x.bean.id}`}>
+              <button type="button" key={x.bean.id} onClick={() => setOpenId(x.bean.id)}>
                 <i style={{ background: famOf(x.bean).tile }} />
                 <b>{x.bean.name}</b>
                 <small>{x.days === null ? "Never logged" : `Last cup ${lastDrunkLabel(x.days).toLowerCase()}`}</small>
-              </a>
+              </button>
             ))}
           </div>
         )}
       </div>
 
       <div className="ps-foot"><HowBuilt /></div>
+
+      <DetailModal
+        bean={openBean}
+        drinkLog={openBean ? { count: allCups[openBean.id] || 0, lastDays: lastDrunk[openBean.id] ? daysSince(lastDrunk[openBean.id]) : null } : null}
+        canEdit
+        onClose={() => setOpenId(null)}
+        onEdit={setEditBean}
+        onDelete={deleteBean}
+        onToggleAvailability={toggleAvailability}
+        onRate={rate}
+      />
+      {editBean && <AddBeanModal editBean={editBean} onClose={() => setEditBean(null)} onSave={saveEdit} />}
     </div>
   );
 }
