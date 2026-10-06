@@ -80,9 +80,7 @@ function Card({ cup }) {
           <ExtLink href={cup.cafe_website}>{cup.cafe_name}</ExtLink>
           {cup.cafe_city && <small>{cup.cafe_city}</small>}
         </div>
-      ) : (
-        <div className="pp-where home">At home</div>
-      )}
+      ) : null}
       <h3><ExtLink href={cup.coffee_website}>{cup.coffee_name}</ExtLink></h3>
       <Tile cup={cup} />
       <div className="pp-info">
@@ -130,16 +128,15 @@ const css = `
   .pp-tile-cup div { position: absolute; inset: 11%; border-radius: 50%; }
   .pp-tile-proc { position: absolute; left: 12px; top: 12px; max-width: 80%; padding: 5px 9px; background: #F3ECDD; font: 500 10.5px/1.3 'DM Mono', monospace; letter-spacing: .04em; text-transform: uppercase; }
 
-  .pp-section { display: flex; align-items: center; gap: 14px; margin: 56px 0 22px; }
+  .pp-section { display: flex; align-items: center; gap: 14px; margin: 44px 0 22px; }
   .pp-section h2 { font: 400 clamp(30px, 4vw, 46px)/1 var(--tf); letter-spacing: .05em; text-transform: uppercase; }
   .pp-section div { flex: 1; height: 3px; background: #161210; }
 
-  .pp-row { display: flex; gap: 26px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -20px; padding: 6px 20px 44px; scrollbar-width: thin; scrollbar-color: #161210 transparent; }
+  .pp-row { display: flex; gap: 26px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -20px; padding: 6px 20px 30px; scrollbar-width: thin; scrollbar-color: #161210 transparent; }
   .pp-card { flex: 0 0 min(78vw, 280px); scroll-snap-align: start; scroll-margin-left: 20px; background: #F3ECDD; border: 10px solid #161210; box-shadow: 0 18px 36px rgba(22,18,16,.2); padding: 14px 14px 12px; display: flex; flex-direction: column; }
   .pp-where { margin: -14px -14px 12px; padding: 9px 14px; border-bottom: 3px solid #161210; background: #D9A441; font: 400 19px/1 var(--tf); letter-spacing: .05em; text-transform: uppercase; }
   .pp-where small { display: block; margin-top: 4px; font: 500 10px 'DM Mono', monospace; letter-spacing: .12em; }
-  .pp-where.home { background: #F3ECDD; }
-  .pp-card h3 { font: 400 25px/0.92 var(--tf); letter-spacing: .03em; text-transform: uppercase; text-wrap: balance; overflow-wrap: break-word; }
+    .pp-card h3 { font: 400 25px/0.92 var(--tf); letter-spacing: .03em; text-transform: uppercase; text-wrap: balance; overflow-wrap: break-word; }
   .pp-card .pp-tile { margin-top: 10px; }
   .pp-info { display: flex; flex-direction: column; gap: 7px; padding: 12px 0; }
   .pp-card .pp-field, .pp-card .pp-note { font-size: 13px; }
@@ -154,7 +151,11 @@ const css = `
 
 export default async function PublicPage() {
   const { data } = await supabase.from("recent_cups").select("*").order("drunk_at", { ascending: false });
-  const [last, ...recent] = data || [];
+  const [last, ...rest] = data || [];
+  const rows = [
+    { title: "At cafés", cups: rest.filter(cup => cup.place === "cafe") },
+    { title: "At home", cups: rest.filter(cup => cup.place !== "cafe") },
+  ].filter(row => row.cups.length > 0);
 
   return (
     <>
@@ -170,14 +171,14 @@ export default async function PublicPage() {
           ) : (
             <>
               <Hero cup={last} />
-              {recent.length > 0 && (
-                <>
-                  <div className="pp-section"><h2>Recent cups</h2><div /><span className="pp-mono">Scroll →</span></div>
+              {rows.map(row => (
+                <section key={row.title}>
+                  <div className="pp-section"><h2>{row.title}</h2><div />{row.cups.length > 4 && <span className="pp-mono">Scroll →</span>}</div>
                   <div className="pp-row">
-                    {recent.map(cup => <Card key={`${cup.place}-${cup.cafe_name || ""}-${cup.coffee_name}`} cup={cup} />)}
+                    {row.cups.map(cup => <Card key={`${cup.cafe_name || ""}-${cup.coffee_name}`} cup={cup} />)}
                   </div>
-                </>
-              )}
+                </section>
+              ))}
             </>
           )}
         </div>
