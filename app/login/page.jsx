@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { supabase } from "../lib/supabase-browser";
+import HowBuilt from "../lib/HowBuilt";
 
 
 function friendlyError(message) {
@@ -90,6 +91,7 @@ export default function LoginPage() {
           </div>
         </div>
         <a className="pl-back" href="/">← Back to Bean Journal</a>
+        <HowBuilt />
       </div>
     </>
   );

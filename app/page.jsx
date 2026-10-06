@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { FAM, TAG_DOTS, processFamily } from "./lib/poster";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./lib/supabase-config";
+import HowBuilt from "./lib/HowBuilt";
 
 export const dynamic = "force-dynamic";
 
@@ -99,7 +100,7 @@ const css = `
   .pp { min-height: 100vh; overflow-x: clip; color: #161210; font-family: 'Space Grotesk', sans-serif; --tf: 'Righteous'; background: #E9E3D6 url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix values=%220 0 0 0 0.1 0 0 0 0 0.07 0 0 0 0 0.05 0 0 0 0.22 0%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E'); }
   .pp a { color: inherit; text-decoration: none; }
   .pp a:hover { color: #D2483A; }
-  .pp-wrap { max-width: 1180px; margin: 0 auto; padding: clamp(20px, 4vw, 48px) 20px 80px; }
+  .pp-wrap { max-width: 1180px; margin: 0 auto; padding: clamp(20px, 4vw, 48px) 20px 60px; }
   .pp-mono { font: 500 11px 'DM Mono', monospace; letter-spacing: .12em; text-transform: uppercase; }
   .pp-label { align-self: flex-start; padding: 1px 5px; background: #161210; color: #F3ECDD; font: 500 9.5px 'DM Mono', monospace; letter-spacing: .12em; }
 
@@ -141,6 +142,7 @@ const css = `
   .pp-info { display: flex; flex-direction: column; gap: 7px; padding: 12px 0; }
   .pp-card .pp-field, .pp-card .pp-note { font-size: 13px; }
   .pp-foot { margin-top: auto; padding-top: 10px; border-top: 2px solid #161210; font: 500 11.5px 'DM Mono', monospace; }
+  .pp-foot-links { display: flex; justify-content: flex-end; margin-top: 40px; }
   .pp-empty { padding: 60px 0; text-align: center; font: 400 clamp(26px, 4vw, 44px)/1 var(--tf); letter-spacing: .04em; text-transform: uppercase; }
 
   @media (max-width: 760px) {
@@ -181,6 +183,7 @@ export default async function PublicPage() {
               ))}
             </>
           )}
+          <div className="pp-foot-links"><HowBuilt /></div>
         </div>
       </div>
     </>

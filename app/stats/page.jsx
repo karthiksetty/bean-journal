@@ -1,53 +1,127 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase-browser";
-
-
-const PROCESS_COLORS = {
-  "Washed":                  "#3A6B52",
-  "Natural":                 "#8B4F1E",
-  "Co-fermented":            "#5C4A7A",
-  "Natural & Thermal Shock": "#7A4030",
-  "Osmotic Dehydration":     "#2D5A7A",
-};
+import { FAM, processFamily, lastDrunkLabel } from "../lib/poster";
+import HowBuilt from "../lib/HowBuilt";
 
 const AROMA_CATEGORIES = [
-  { label: "Berry & Cherry",   color: "#C0344D", keywords: ["berry","blueberry","raspberry","strawberry","cherry","blackberry","cranberry","redcurrant","wine gum","red plum","wild cherry","sour cherry","sweet cherry"] },
-  { label: "Caramel & Sweet",  color: "#92400E", keywords: ["caramel","toffee","brown sugar","molasses","honey","nougat","butterscotch","vanilla","cream","butter","cake","pie","biscuit","pastry","blueberry pie","raspberry ripple","ice cream"] },
-  { label: "Tropical",         color: "#065F46", keywords: ["tropical","mango","guava","lychee","passion","pineapple","papaya","coconut","watermelon","melon","yellow melon","watermelon candy","tropical sweet","tropical fruits"] },
-  { label: "Stone Fruit",      color: "#C2410C", keywords: ["stone fruit","peach","apricot","plum","nectarine"] },
-  { label: "Citrus",           color: "#B45309", keywords: ["citrus","orange","lime","lemon","grapefruit","tangerine","blood orange","yuzu","pink lemonade"] },
-  { label: "Wine & Ferment",   color: "#5B21B6", keywords: ["wine","winey","ferment","cider","amaretto","cherry coke","tonka"] },
-  { label: "Floral",           color: "#9D174D", keywords: ["floral","rose","jasmine","blossom","orange blossom","hibiscus","lavender","elderflower"] },
-  { label: "Spice",            color: "#78350F", keywords: ["spice","nutmeg","cinnamon","cardamom","clove","pepper","ginger","sweet spices"] },
-  { label: "Tea & Herbal",     color: "#047857", keywords: ["tea","black tea","green tea","oolong","iced tea","herbal"] },
-  { label: "Chocolate",        color: "#3D1C02", keywords: ["chocolate","cocoa","cacao","dark chocolate","milk chocolate","mocha"] },
+  { label: "Berry & Cherry",   color: "#D2483A", keywords: ["berry","blueberry","raspberry","strawberry","cherry","blackberry","cranberry","redcurrant","wine gum","red plum","wild cherry","sour cherry","sweet cherry"] },
+  { label: "Caramel & Sweet",  color: "#D9A441", keywords: ["caramel","toffee","brown sugar","molasses","honey","nougat","butterscotch","vanilla","cream","butter","cake","pie","biscuit","pastry","blueberry pie","raspberry ripple","ice cream"] },
+  { label: "Tropical",         color: "#9DB0A8", keywords: ["tropical","mango","guava","lychee","passion","pineapple","papaya","coconut","watermelon","melon","yellow melon","watermelon candy","tropical sweet","tropical fruits"] },
+  { label: "Stone Fruit",      color: "#A47B60", keywords: ["stone fruit","peach","apricot","plum","nectarine"] },
+  { label: "Citrus",           color: "#D9A99B", keywords: ["citrus","orange","lime","lemon","grapefruit","tangerine","blood orange","yuzu","pink lemonade"] },
+  { label: "Wine & Ferment",   color: "#5A2A22", keywords: ["wine","winey","ferment","cider","amaretto","cherry coke","tonka"] },
+  { label: "Floral",           color: "#D2483A", keywords: ["floral","rose","jasmine","blossom","orange blossom","hibiscus","lavender","elderflower"] },
+  { label: "Spice",            color: "#D9A441", keywords: ["spice","nutmeg","cinnamon","cardamom","clove","pepper","ginger","sweet spices"] },
+  { label: "Tea & Herbal",     color: "#9DB0A8", keywords: ["tea","black tea","green tea","oolong","iced tea","herbal"] },
+  { label: "Chocolate",        color: "#A47B60", keywords: ["chocolate","cocoa","cacao","dark chocolate","milk chocolate","mocha"] },
 ];
 
-const COUNTRY_FLAGS = {
-  "Colombia": "🇨🇴", "Ethiopia": "🇪🇹", "Kenya": "🇰🇪", "Mexico": "🇲🇽",
-  "Peru": "🇵🇪", "Guatemala": "🇬🇹", "Brazil": "🇧🇷", "Rwanda": "🇷🇼",
-  "Tanzania": "🇹🇿", "Yemen": "🇾🇪", "India": "🇮🇳", "Honduras": "🇭🇳",
-  "Costa Rica": "🇨🇷", "Panama": "🇵🇦", "Bolivia": "🇧🇴", "Nicaragua": "🇳🇮",
-  "El Salvador": "🇸🇻", "Indonesia": "🇮🇩", "Ecuador": "🇪🇨",
-};
+const HEAT = ["#F3ECDD", "#D9A99B", "#D2483A", "#5A2A22"];
+const WEEKS = 26;
+const TOP = 5;
 
-function toLocalDateStr(iso) {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+function dayKey(date) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function daysBetween(date) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(date); d.setHours(0,0,0,0);
+function daysSince(date) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const d = new Date(date); d.setHours(0, 0, 0, 0);
   return Math.round((today - d) / 86400000);
 }
 
-function cupColor(cups) {
-  if (cups === 0) return "#F0EAE0";
-  if (cups === 1) return "#C4A882";
-  if (cups === 2) return "#6B4226";
-  return "#2C1810";
+function top(counts) {
+  return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, TOP);
+}
+
+function delta(diff, digits, versus) {
+  if (diff === 0) return `Same as ${versus}`;
+  return `${diff > 0 ? "▲" : "▼"} ${Math.abs(diff).toFixed(digits)} vs ${versus}`;
+}
+
+// Lets a tile shrink its type so the longest word of a bean name fits on one line.
+const longest = name => ({ "--w": Math.max(...(name || "None").split(/\s+/).map(w => w.length)) });
+
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Righteous&family=Space+Grotesk:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .ps { min-height: 100vh; color: #161210; font-family: 'Space Grotesk', sans-serif; --tf: 'Righteous'; background: #E9E3D6 url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix values=%220 0 0 0 0.1 0 0 0 0 0.07 0 0 0 0 0.05 0 0 0 0.22 0%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E'); }
+  .ps button { cursor: pointer; font-family: 'Space Grotesk', sans-serif; }
+  .ps-top { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 max(20px, calc((100% - 1180px) / 2)); background: #161210; color: #F3ECDD; }
+  .ps-top a { color: #F3ECDD; text-decoration: none; font: 400 clamp(20px, 5vw, 28px)/1 var(--tf); letter-spacing: .06em; text-transform: uppercase; }
+  .ps-top a:hover { color: #D9A441; }
+  .ps-mono { font: 500 11px 'DM Mono', monospace; letter-spacing: .12em; text-transform: uppercase; }
+  .ps-wrap { max-width: 1180px; margin: 0 auto; padding: clamp(24px, 4vw, 48px) 20px 80px; }
+  .ps-wrap > h1 { font: 400 clamp(56px, 10vw, 120px)/0.86 var(--tf); letter-spacing: .03em; text-transform: uppercase; }
+  .ps-msg { padding: 80px 20px; text-align: center; font: 400 clamp(26px, 4vw, 40px)/1 var(--tf); letter-spacing: .04em; text-transform: uppercase; }
+
+  .ps-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-top: 28px; }
+  .ps-tile { display: flex; flex-direction: column; gap: 8px; min-height: 170px; padding: 16px 16px 18px; border: 6px solid #161210; }
+  .ps-tile.light { color: #F3ECDD; }
+  .ps-big { margin-top: auto; font: 400 clamp(44px, 6vw, 68px)/0.9 var(--tf); letter-spacing: .02em; text-transform: uppercase; overflow-wrap: break-word; }
+  .ps-tile { container-type: inline-size; }
+  .ps-big.name { font-size: max(18px, min(34px, calc(100cqi / (var(--w, 8) * 0.76)))); }
+  .ps-delta { align-self: flex-start; padding: 4px 8px; background: #161210; color: #F3ECDD; font: 500 11px 'DM Mono', monospace; letter-spacing: .06em; }
+  .ps-tile.light .ps-delta { background: #F3ECDD; color: #161210; }
+
+  .ps-panel { margin-top: 30px; padding: 20px 22px 22px; background: #F3ECDD; border: 10px solid #161210; box-shadow: 0 18px 36px rgba(22,18,16,.18); }
+  .ps-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 2px solid #161210; }
+  .ps-head h2 { font: 400 clamp(24px, 3vw, 34px)/1 var(--tf); letter-spacing: .05em; text-transform: uppercase; }
+  .ps-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 0 30px; align-items: start; }
+  .ps-foot { display: flex; justify-content: flex-end; margin-top: 36px; }
+  .ps-none { font: 500 12px 'DM Mono', monospace; }
+  .ps-toggle { display: flex; }
+  .ps-toggle button { padding: 8px 14px; border: 2px solid #161210; background: #F3ECDD; color: #161210; font: 700 13px 'Space Grotesk', sans-serif; }
+  .ps-toggle button + button { border-left: none; }
+  .ps-toggle button.on { background: #161210; color: #F3ECDD; }
+
+  .ps-heat { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+  .ps-days { display: grid; grid-template-rows: repeat(7, 18px); gap: 4px; padding-top: 22px; }
+  .ps-days span, .ps-weeks em { font: 500 10px/18px 'DM Mono', monospace; font-style: normal; }
+  .ps-weeks { display: grid; grid-auto-flow: column; grid-template-rows: 18px repeat(7, 18px); gap: 4px; }
+  .ps-weeks em { width: 18px; white-space: nowrap; }
+  .ps-weeks i { width: 18px; height: 18px; display: block; outline: 1.5px solid #161210; outline-offset: -1.5px; }
+  .ps-weeks i.future { outline: none; background: none; }
+  .ps-legend { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+  .ps-legend i { width: 14px; height: 14px; display: block; outline: 1.5px solid #161210; outline-offset: -1.5px; }
+
+  .ps-bar { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 44px; align-items: center; gap: 12px; padding: 7px 0; }
+  .ps-bar b { font: 700 14px/1.2 'Space Grotesk', sans-serif; overflow-wrap: anywhere; }
+  .ps-track { height: 22px; border: 2px solid #161210; background: #FBF7EE; }
+  .ps-fill { height: 100%; border-right: 2px solid #161210; }
+  .ps-n { font: 500 12px 'DM Mono', monospace; text-align: right; }
+
+  .ps-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1.5px dashed #161210; }
+  .ps-row:last-child { border-bottom: none; }
+  .ps-row b { font: 700 15px/1.25 'Space Grotesk', sans-serif; }
+  .ps-row small { display: block; margin-top: 2px; font: 500 11px 'DM Mono', monospace; }
+  .ps-chip { flex: none; padding: 5px 9px; background: #161210; color: #F3ECDD; font: 500 11px 'DM Mono', monospace; letter-spacing: .04em; }
+  .ps-rate { flex: none; display: flex; }
+  .ps-rate button { width: 30px; height: 36px; display: flex; align-items: center; justify-content: center; border: none; background: none; color: #161210; }
+  .ps-rate button span { width: 16px; height: 22px; border: 2.5px solid currentColor; border-top: none; border-radius: 0 0 4px 4px; display: block; }
+  .ps-rate button:hover span, .ps-rate button:has(~ button:hover) span { background: #D9A441; }
+
+  .ps-next { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+  .ps-next a { display: block; padding: 0 12px 12px; border: 2.5px solid #161210; color: #161210; text-decoration: none; }
+  .ps-next a:hover { background: #161210; color: #F3ECDD; }
+  .ps-next i { display: block; height: 10px; margin: 0 -12px 10px; border-bottom: 2.5px solid #161210; }
+  .ps-next b { display: block; font: 400 18px/1 var(--tf); letter-spacing: .04em; text-transform: uppercase; overflow-wrap: break-word; }
+  .ps-next small { display: block; margin-top: 6px; font: 500 11px 'DM Mono', monospace; }
+  @media (max-width: 480px) { .ps-bar { grid-template-columns: minmax(0, 104px) minmax(0, 1fr) 38px; gap: 8px; } }
+`;
+
+function Bars({ rows, unit = "" }) {
+  if (rows.length === 0) return <p className="ps-none">Nothing logged yet</p>;
+  const max = Math.max(...rows.map(r => r.value));
+  return rows.map(r => (
+    <div className="ps-bar" key={r.label}>
+      <b>{r.label}</b>
+      <div className="ps-track"><div className="ps-fill" style={{ width: `${Math.round(r.value / max * 100)}%`, background: r.color || "#161210" }} /></div>
+      <span className="ps-n">{r.value}{unit}</span>
+    </div>
+  ));
 }
 
 export default function StatsPage() {
@@ -58,7 +132,7 @@ export default function StatsPage() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from("beans").select("id, name, brand, process, region, aroma, available"),
+      supabase.from("beans").select("id, name, brand, process, region, aroma, available, my_rating"),
       supabase.from("drink_logs").select("bean_id, logged_at").order("logged_at", { ascending: false }),
     ]).then(([{ data: beanData }, { data: logData }]) => {
       setBeans(beanData || []);
@@ -67,374 +141,208 @@ export default function StatsPage() {
     });
   }, []);
 
-  if (loading) return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: "#FAF7F2", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#A0896B" }}>
-      Loading…
+  const rate = async (bean, rating) => {
+    const { error } = await supabase.from("beans").update({ my_rating: rating }).eq("id", bean.id);
+    if (!error) setBeans(prev => prev.map(b => b.id === bean.id ? { ...b, my_rating: rating } : b));
+  };
+
+  const frame = content => (
+    <div className="ps">
+      <style>{css}</style>
+      <header className="ps-top"><a href="/collection">Bean Journal</a><span className="ps-mono">Stats</span></header>
+      {content}
     </div>
   );
 
-  const today = new Date(); today.setHours(0,0,0,0);
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  if (loading) return frame(<div className="ps-msg">Loading…</div>);
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   const beanMap = Object.fromEntries(beans.map(b => [b.id, b]));
+  const famOf = bean => FAM[processFamily(bean.process)];
+  const roasterOf = bean => bean.brand && bean.brand !== "—" ? bean.brand : "";
 
-  // ── Summary ────────────────────────────────────────────────────────────────
-  const cupsThisMonth = logs.filter(l => new Date(l.logged_at) >= startOfMonth).length;
-  const daysElapsed = Math.max(1, today.getDate());
-  const avgPerDay = (cupsThisMonth / daysElapsed).toFixed(1);
+  // This month against last month
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const lastName = lastStart.toLocaleDateString("en-GB", { month: "short" });
+  const dayOfMonth = today.getDate();
+  const monthLogs = logs.filter(l => new Date(l.logged_at) >= monthStart);
+  const lastLogs = logs.filter(l => { const d = new Date(l.logged_at); return d >= lastStart && d < monthStart; });
+  const lastSamePoint = lastLogs.filter(l => new Date(l.logged_at).getDate() <= dayOfMonth).length;
+  const perDay = monthLogs.length / dayOfMonth;
+  const lastPerDay = lastLogs.length / new Date(today.getFullYear(), today.getMonth(), 0).getDate();
 
-  // Favourite bean (all-time most logged)
-  const allCountMap = {};
-  for (const l of logs) allCountMap[l.bean_id] = (allCountMap[l.bean_id] || 0) + 1;
-  const favEntry = Object.entries(allCountMap).sort((a, b) => b[1] - a[1])[0];
-  const favBeanName = favEntry ? (beanMap[favEntry[0]]?.name ?? "—") : "—";
-  // Shorten long names for the tile
-  const favShort = favBeanName.length > 16 ? favBeanName.split(" ").slice(0, 2).join(" ") : favBeanName;
+  const cupCount = list => { const m = {}; for (const l of list) m[l.bean_id] = (m[l.bean_id] || 0) + 1; return m; };
+  const allCups = cupCount(logs);
+  const monthCups = cupCount(monthLogs);
+  const favourite = counts => {
+    const [id, cups] = Object.entries(counts).filter(([id]) => beanMap[id]).sort((a, b) => b[1] - a[1])[0] || [];
+    return id ? { name: beanMap[id].name, cups } : null;
+  };
+  const monthFav = favourite(monthCups);
+  const allFav = favourite(allCups);
 
-  // ── Heatmap ────────────────────────────────────────────────────────────────
-  // Build cups-per-day map
-  const cupsPerDay = {};
-  for (const l of logs) {
-    const k = toLocalDateStr(l.logged_at);
-    cupsPerDay[k] = (cupsPerDay[k] || 0) + 1;
-  }
-  // Start from the Monday of the week before the first log (or 4 weeks ago min)
-  const todayDow = (today.getDay() + 6) % 7; // 0=Mon, 6=Sun
-  const firstLog = logs.length > 0 ? new Date(logs[logs.length - 1].logged_at) : today;
-  // Align firstLog back to its Monday
-  const firstLogDow = (firstLog.getDay() + 6) % 7;
-  const firstMonday = new Date(firstLog);
-  firstMonday.setDate(firstLog.getDate() - firstLogDow - 7); // 1 week padding
-  firstMonday.setHours(0, 0, 0, 0);
-  // Align today forward to end of current week (Sunday)
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - todayDow);
-  const WEEKS = Math.max(4, Math.round((weekStart - firstMonday) / (7 * 86400000)) + 1);
-  const gridStart = firstMonday;
-
-  const grid = []; // array of columns (weeks), each column has 7 day objects
-  let monthLabels = []; // { col, label }
-  let lastMonth = -1;
+  // Heatmap: the last 26 weeks, Monday first
+  const perDayCups = {};
+  for (const l of logs) { const k = dayKey(l.logged_at); perDayCups[k] = (perDayCups[k] || 0) + 1; }
+  const gridStart = new Date(today);
+  gridStart.setDate(today.getDate() - ((today.getDay() + 6) % 7) - (WEEKS - 1) * 7);
+  const weeks = [];
+  let shownMonth = -1;
   for (let w = 0; w < WEEKS; w++) {
-    const col = [];
+    const days = [];
     for (let d = 0; d < 7; d++) {
       const date = new Date(gridStart);
       date.setDate(gridStart.getDate() + w * 7 + d);
-      const key = toLocalDateStr(date);
-      const cups = cupsPerDay[key] || 0;
-      const isFuture = date > today;
-      col.push({ date, key, cups, isFuture });
-      if (d === 0 && date.getMonth() !== lastMonth) {
-        monthLabels.push({ col: w, label: date.toLocaleDateString("en-GB", { month: "short" }) });
-        lastMonth = date.getMonth();
-      }
+      days.push({ date, cups: perDayCups[dayKey(date)] || 0, future: date > today });
     }
-    grid.push(col);
+    const month = days[0].date.getMonth();
+    weeks.push({ days, label: month !== shownMonth ? days[0].date.toLocaleDateString("en-GB", { month: "short" }) : "" });
+    shownMonth = month;
   }
 
-  // ── Most drunk ─────────────────────────────────────────────────────────────
-  const filteredLogs = range === "month"
-    ? logs.filter(l => new Date(l.logged_at) >= startOfMonth)
-    : logs;
-  const countMap = {};
-  for (const l of filteredLogs) countMap[l.bean_id] = (countMap[l.bean_id] || 0) + 1;
-  const ranked = Object.entries(countMap)
-    .map(([id, count]) => ({ bean: beanMap[id], count }))
-    .filter(x => x.bean)
-    .sort((a, b) => b.count - a.count);
-  const maxCount = ranked[0]?.count || 1;
+  // Bar charts
+  const mostDrunk = top(range === "month" ? monthCups : allCups)
+    .filter(([id]) => beanMap[id])
+    .map(([id, value]) => ({ label: beanMap[id].name, value, color: famOf(beanMap[id]).tile }));
 
-  // ── Process breakdown ──────────────────────────────────────────────────────
-  const processCups = {};
+  const famCups = {}, roasterCups = {}, countryCups = {}, flavourCups = {};
+  let counted = 0;
   for (const l of logs) {
-    const proc = beanMap[l.bean_id]?.process;
-    if (proc) processCups[proc] = (processCups[proc] || 0) + 1;
-  }
-  const totalProcessCups = Object.values(processCups).reduce((s, v) => s + v, 0) || 1;
-  const processRanked = Object.entries(processCups)
-    .map(([proc, count]) => ({ proc, count, pct: Math.round((count / totalProcessCups) * 100) }))
-    .sort((a, b) => b.count - a.count);
-
-  // ── Origin breakdown ───────────────────────────────────────────────────────
-  const countryCups = {};
-  for (const l of logs) {
-    const regions = beanMap[l.bean_id]?.region || [];
-    const countries = [...new Set(regions.map(r => r.split(",").at(-1).trim()))];
-    for (const c of countries) {
-      if (c) countryCups[c] = (countryCups[c] || 0) + 1;
+    const bean = beanMap[l.bean_id];
+    if (!bean) continue;
+    counted++;
+    const fam = processFamily(bean.process);
+    famCups[fam] = (famCups[fam] || 0) + 1;
+    const roaster = roasterOf(bean);
+    if (roaster) roasterCups[roaster] = (roasterCups[roaster] || 0) + 1;
+    for (const c of new Set((bean.region || []).map(r => r.split(",").at(-1).trim()).filter(Boolean))) countryCups[c] = (countryCups[c] || 0) + 1;
+    const lower = (bean.aroma || []).map(a => a.toLowerCase());
+    for (const cat of AROMA_CATEGORIES) {
+      if (lower.some(a => cat.keywords.some(k => a.includes(k)))) flavourCups[cat.label] = (flavourCups[cat.label] || 0) + 1;
     }
   }
-  const originRanked = Object.entries(countryCups)
-    .map(([country, count]) => ({ country, count }))
-    .sort((a, b) => b.count - a.count);
+  const processRows = Object.entries(famCups).sort((a, b) => b[1] - a[1])
+    .map(([fam, n]) => ({ label: FAM[fam].label, value: Math.round(n / counted * 100), color: FAM[fam].tile }));
+  const plain = counts => top(counts).map(([label, value]) => ({ label, value }));
+  const flavourRows = top(flavourCups).map(([label, value]) => ({ label, value, color: AROMA_CATEGORIES.find(c => c.label === label).color }));
 
-  // ── Flavour profile ────────────────────────────────────────────────────────
-  const flavourCounts = {};
-  for (const l of logs) {
-    const aromas = beanMap[l.bean_id]?.aroma || [];
-    const matched = new Set();
-    for (const aroma of aromas) {
-      const lower = aroma.toLowerCase();
-      for (const cat of AROMA_CATEGORIES) {
-        if (!matched.has(cat.label) && cat.keywords.some(k => lower.includes(k))) {
-          flavourCounts[cat.label] = (flavourCounts[cat.label] || 0) + 1;
-          matched.add(cat.label);
-        }
-      }
-    }
-  }
-  const flavourRanked = AROMA_CATEGORIES
-    .map(cat => ({ ...cat, count: flavourCounts[cat.label] || 0 }))
-    .filter(c => c.count > 0)
-    .sort((a, b) => b.count - a.count);
-  const maxFlavour = flavourRanked[0]?.count || 1;
+  // Ratings
+  const withCups = beans.map(b => ({ bean: b, cups: allCups[b.id] || 0 }));
+  const rated = withCups.filter(x => x.bean.my_rating > 0);
+  const topRated = [...rated].sort((a, b) => b.bean.my_rating - a.bean.my_rating || b.cups - a.cups).slice(0, TOP);
+  const toRate = withCups.filter(x => !(x.bean.my_rating > 0) && x.cups > 0).sort((a, b) => b.cups - a.cups).slice(0, TOP);
+  const sub = x => [roasterOf(x.bean), `${x.cups} cup${x.cups === 1 ? "" : "s"}`].filter(Boolean).join(" · ");
 
-  // ── Neglected ──────────────────────────────────────────────────────────────
-  const lastDrunkMap = {};
-  for (const l of logs) {
-    if (!lastDrunkMap[l.bean_id]) lastDrunkMap[l.bean_id] = l.logged_at;
-  }
-  const neglected = beans
+  // Drink next: in stock and not drunk for a week or more, never-logged first
+  const lastDrunk = {};
+  for (const l of logs) if (!lastDrunk[l.bean_id]) lastDrunk[l.bean_id] = l.logged_at;
+  const drinkNext = beans
     .filter(b => b.available !== false)
-    .map(b => ({ bean: b, lastDays: lastDrunkMap[b.id] ? daysBetween(lastDrunkMap[b.id]) : null }))
-    .filter(x => x.lastDays === null || x.lastDays >= 7)
-    .sort((a, b) => (b.lastDays ?? 999) - (a.lastDays ?? 999));
+    .map(b => ({ bean: b, days: lastDrunk[b.id] ? daysSince(lastDrunk[b.id]) : null }))
+    .filter(x => x.days === null || x.days >= 7)
+    .sort((a, b) => (b.days ?? Infinity) - (a.days ?? Infinity));
 
-  // ── Recent days ────────────────────────────────────────────────────────────
-  const recentDays = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = toLocalDateStr(d);
-    const dayLogs = logs.filter(l => toLocalDateStr(l.logged_at) === key);
-    const beanNames = dayLogs.map(l => beanMap[l.bean_id]?.name).filter(Boolean);
-    recentDays.push({ date: d, key, beans: beanNames });
-  }
+  return frame(
+    <div className="ps-wrap">
+      <h1>Stats</h1>
 
-  const card = { background: "#fff", borderRadius: 16, border: "1px solid #EDE5D8", padding: 16, marginBottom: 16 };
-  const cardTitle = { fontWeight: 600, fontSize: 15, marginBottom: 14 };
-
-  return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #FAF7F2; }
-      `}</style>
-      <div style={{ fontFamily: "'DM Sans', sans-serif", background: "#FAF7F2", minHeight: "100vh", color: "#2C1810" }}>
-
-        {/* Header */}
-        <div style={{ background: "#FEFCF8", borderBottom: "1px solid #EDE5D8", padding: "24px 40px", position: "sticky", top: 0, zIndex: 10 }}>
-          <div style={{ maxWidth: "680px", margin: "0 auto", display: "flex", alignItems: "center", gap: 12 }}>
-            <a href="/collection" style={{ textDecoration: "none", color: "#A0896B", fontSize: 13, fontWeight: 500 }}>← Beans</a>
-            <span style={{ color: "#EDE5D8" }}>|</span>
-            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700 }}>Stats</span>
-          </div>
+      <div className="ps-tiles">
+        <div className="ps-tile light" style={{ background: "#D2483A" }}>
+          <span className="ps-mono">Cups this month</span>
+          <span className="ps-big">{monthLogs.length}</span>
+          <span className="ps-delta">{delta(monthLogs.length - lastSamePoint, 0, `same days in ${lastName}`)}</span>
         </div>
-
-        <div style={{ maxWidth: "680px", margin: "0 auto", padding: "28px 20px 60px" }}>
-
-          {/* ── Summary tiles ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
-            {[
-              {
-                label: "Cups this month", value: cupsThisMonth,
-                icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4A882" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>,
-              },
-              {
-                label: "Avg / day", value: avgPerDay,
-                icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4A882" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
-              },
-              {
-                label: "Favourite", value: favShort,
-                icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4A882" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
-              },
-            ].map(s => (
-              <div key={s.label} style={{ background: "#fff", borderRadius: 14, padding: "14px 10px", border: "1px solid #EDE5D8", textAlign: "center" }}>
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}>{s.icon}</div>
-                <div style={{ fontSize: s.label === "Favourite" ? 13 : 22, fontWeight: 700, fontFamily: "'Playfair Display', serif", lineHeight: 1.2, wordBreak: "break-word" }}>{s.value}</div>
-                <div style={{ fontSize: 10, color: "#A0896B", marginTop: 5 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* ── Activity Heatmap ── */}
-          <div style={card}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <div style={cardTitle}>Activity</div>
-              <span style={{ fontSize: 11, color: "#A0896B" }}>{WEEKS} weeks</span>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              {/* Day labels */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginRight: 6, paddingTop: 20 }}>
-                {["M", "", "W", "", "F", "", "S"].map((d, i) => (
-                  <div key={i} style={{ fontSize: 10, color: "#A0896B", height: 18, lineHeight: "18px", width: 10, textAlign: "right" }}>{d}</div>
-                ))}
-              </div>
-
-              <div style={{ overflowX: "auto" }}>
-                {/* Month labels */}
-                <div style={{ display: "flex", marginBottom: 4, height: 16, position: "relative", minWidth: WEEKS * 22 }}>
-                  {monthLabels.map(({ col, label }) => (
-                    <div key={label} style={{ position: "absolute", left: col * 22, fontSize: 10, color: "#A0896B" }}>{label}</div>
-                  ))}
-                </div>
-
-                {/* Grid */}
-                <div style={{ display: "flex", gap: 4 }}>
-                  {grid.map((col, w) => (
-                    <div key={w} style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
-                      {col.map((cell, d) => (
-                        <div
-                          key={d}
-                          title={cell.isFuture ? "" : `${cell.date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}: ${cell.cups} cup${cell.cups !== 1 ? "s" : ""}`}
-                          style={{ width: 18, height: 18, borderRadius: 4, background: cell.isFuture ? "transparent" : cupColor(cell.cups) }}
-                        />
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 10, justifyContent: "flex-end" }}>
-              <span style={{ fontSize: 10, color: "#A0896B" }}>0</span>
-              {["#F0EAE0", "#C4A882", "#6B4226", "#2C1810"].map((bg, i) => (
-                <div key={i} style={{ width: 14, height: 14, borderRadius: 3, background: bg }} />
-              ))}
-              <span style={{ fontSize: 10, color: "#A0896B" }}>3+</span>
-            </div>
-          </div>
-
-          {/* ── Process Breakdown ── */}
-          {processRanked.length > 0 && (
-            <div style={card}>
-              <div style={cardTitle}>Process Breakdown</div>
-              {processRanked.map((row, i) => {
-                const color = PROCESS_COLORS[row.proc] || "#C4A882";
-                return (
-                  <div key={row.proc} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: i < processRanked.length - 1 ? 10 : 0 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
-                    <div style={{ fontSize: 12, fontWeight: 500, width: 160, flexShrink: 0 }}>{row.proc}</div>
-                    <div style={{ flex: 1, height: 6, background: "#F0EAE0", borderRadius: 3 }}>
-                      <div style={{ width: `${row.pct}%`, height: "100%", borderRadius: 3, background: color }} />
-                    </div>
-                    <div style={{ fontSize: 12, color: "#888", width: 32, textAlign: "right", flexShrink: 0 }}>{row.pct}%</div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* ── Origin Breakdown ── */}
-          {originRanked.length > 0 && (
-            <div style={card}>
-              <div style={cardTitle}>Origin Breakdown</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {originRanked.map(({ country, count }) => (
-                  <div key={country} style={{ display: "flex", alignItems: "center", gap: 6, background: "#F5EFE6", padding: "6px 12px", borderRadius: 20 }}>
-                    <span style={{ fontSize: 16 }}>{COUNTRY_FLAGS[country] || "🌍"}</span>
-                    <span style={{ fontSize: 12, fontWeight: 500 }}>{country}</span>
-                    <span style={{ fontSize: 11, color: "#A0896B", background: "#EDE5D8", padding: "1px 7px", borderRadius: 10 }}>{count} cup{count !== 1 ? "s" : ""}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── Flavour Profile ── */}
-          {flavourRanked.length > 0 && (
-            <div style={card}>
-              <div style={cardTitle}>Flavour Profile</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                {flavourRanked.map(({ label, color, count }) => (
-                  <div key={label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: color, flexShrink: 0 }} />
-                    <div style={{ fontSize: 12, flex: 1 }}>{label}</div>
-                    <div style={{ width: 55, height: 5, background: "#F0EAE0", borderRadius: 3, flexShrink: 0 }}>
-                      <div style={{ width: `${(count / maxFlavour) * 100}%`, height: "100%", borderRadius: 3, background: color }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid #F0EAE0", fontSize: 11, color: "#A0896B" }}>
-                Based on aroma tags across all logged cups
-              </div>
-            </div>
-          )}
-
-          {/* ── Most Drunk ── */}
-          <div style={card}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <div style={cardTitle}>Most Drunk</div>
-              <div style={{ display: "flex", gap: 6 }}>
-                {["month", "all time"].map(r => (
-                  <button key={r} onClick={() => setRange(r)} style={{
-                    padding: "3px 10px", borderRadius: 12, border: "1px solid #EDE5D8", cursor: "pointer",
-                    background: range === r ? "#2C1810" : "transparent",
-                    color: range === r ? "#fff" : "#A0896B", fontSize: 11, fontFamily: "'DM Sans', sans-serif"
-                  }}>{r}</button>
-                ))}
-              </div>
-            </div>
-            {ranked.length === 0 ? (
-              <div style={{ color: "#C4B99A", fontSize: 13, textAlign: "center", padding: "16px 0" }}>No cups logged {range === "month" ? "this month" : "yet"}</div>
-            ) : ranked.map((row, i) => (
-              <div key={row.bean.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: i < ranked.length - 1 ? 10 : 0 }}>
-                <div style={{ width: 18, fontSize: 12, color: "#C4B99A", textAlign: "right", flexShrink: 0 }}>{i + 1}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.bean.name}</div>
-                  <div style={{ fontSize: 11, color: "#A0896B" }}>{row.bean.brand}</div>
-                </div>
-                <div style={{ width: 80, height: 6, background: "#F0EAE0", borderRadius: 3, flexShrink: 0 }}>
-                  <div style={{ width: `${(row.count / maxCount) * 100}%`, height: "100%", background: "#C4A882", borderRadius: 3 }} />
-                </div>
-                <div style={{ fontSize: 12, color: "#888", width: 24, textAlign: "right", flexShrink: 0 }}>{row.count}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* ── Neglected Beans ── */}
-          {neglected.length > 0 && (
-            <div style={card}>
-              <div style={cardTitle}>Neglected Beans</div>
-              {neglected.map(({ bean, lastDays }) => (
-                <div key={bean.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 500 }}>{bean.name}</div>
-                    <div style={{ fontSize: 11, color: "#A0896B" }}>{bean.brand}</div>
-                  </div>
-                  <div style={{ fontSize: 12, color: "#c0392b", background: "#fdf0ee", padding: "3px 10px", borderRadius: 12, flexShrink: 0 }}>
-                    {lastDays === null ? "Never" : `${lastDays}d ago`}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ── Recent Days ── */}
-          <div style={{ ...card, marginBottom: 0 }}>
-            <div style={cardTitle}>Recent Days</div>
-            {recentDays.map((day, i) => (
-              <div key={day.key} style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: 10, marginBottom: i < recentDays.length - 1 ? 10 : 0, borderBottom: i < recentDays.length - 1 ? "1px solid #F5F0EA" : "none" }}>
-                <div style={{ fontSize: 12, color: "#A0896B", width: 76, flexShrink: 0 }}>
-                  {day.date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
-                </div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flex: 1 }}>
-                  {day.beans.length === 0
-                    ? <span style={{ fontSize: 12, color: "#D4C4B0" }}>—</span>
-                    : day.beans.map((name, j) => (
-                      <span key={j} style={{ fontSize: 12, background: "#F5F0EA", color: "#2C1810", padding: "3px 10px", borderRadius: 12 }}>{name}</span>
-                    ))
-                  }
-                </div>
-              </div>
-            ))}
-          </div>
-
+        <div className="ps-tile" style={{ background: "#D9A441" }}>
+          <span className="ps-mono">Per day this month</span>
+          <span className="ps-big">{perDay.toFixed(1)}</span>
+          <span className="ps-delta">{delta(Number((perDay - lastPerDay).toFixed(1)), 1, lastName)}</span>
+        </div>
+        <div className="ps-tile" style={{ background: "#9DB0A8" }}>
+          <span className="ps-mono">Favourite this month</span>
+          <span className="ps-big name" style={longest(monthFav?.name)}>{monthFav ? monthFav.name : "None yet"}</span>
+          {monthFav && <span className="ps-delta">{monthFav.cups} cup{monthFav.cups === 1 ? "" : "s"}</span>}
+        </div>
+        <div className="ps-tile light" style={{ background: "#5A2A22" }}>
+          <span className="ps-mono">All-time favourite</span>
+          <span className="ps-big name" style={longest(allFav?.name)}>{allFav ? allFav.name : "None yet"}</span>
+          {allFav && <span className="ps-delta">{allFav.cups} cup{allFav.cups === 1 ? "" : "s"}</span>}
         </div>
       </div>
-    </>
+
+      <div className="ps-panel">
+        <div className="ps-head"><h2>Activity</h2><span className="ps-mono">Last 6 months</span></div>
+        <div className="ps-heat">
+          <div className="ps-days">{["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <span key={i}>{d}</span>)}</div>
+          <div className="ps-weeks">
+            {weeks.map((week, w) => [
+              <em key={`m${w}`}>{week.label}</em>,
+              ...week.days.map((day, d) => day.future
+                ? <i key={`${w}-${d}`} className="future" />
+                : <i key={`${w}-${d}`} style={{ background: HEAT[Math.min(day.cups, 3)] }} title={`${day.date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}: ${day.cups} cup${day.cups === 1 ? "" : "s"}`} />),
+            ])}
+          </div>
+        </div>
+        <div className="ps-legend"><span className="ps-mono">0</span>{HEAT.map(c => <i key={c} style={{ background: c }} />)}<span className="ps-mono">3+ cups</span></div>
+      </div>
+
+      <div className="ps-panel">
+        <div className="ps-head">
+          <h2>Most drunk</h2>
+          <div className="ps-toggle">
+            <button type="button" className={range === "month" ? "on" : ""} aria-pressed={range === "month"} onClick={() => setRange("month")}>This month</button>
+            <button type="button" className={range === "all" ? "on" : ""} aria-pressed={range === "all"} onClick={() => setRange("all")}>All time</button>
+          </div>
+        </div>
+        <Bars rows={mostDrunk} />
+      </div>
+
+      <div className="ps-two">
+        <div className="ps-panel"><div className="ps-head"><h2>By process</h2><span className="ps-mono">Share of cups</span></div><Bars rows={processRows} unit="%" /></div>
+        <div className="ps-panel"><div className="ps-head"><h2>By roaster</h2><span className="ps-mono">Cups</span></div><Bars rows={plain(roasterCups)} /></div>
+        <div className="ps-panel"><div className="ps-head"><h2>By origin</h2><span className="ps-mono">Cups</span></div><Bars rows={plain(countryCups)} /></div>
+        <div className="ps-panel"><div className="ps-head"><h2>By flavour</h2><span className="ps-mono">Cups</span></div><Bars rows={flavourRows} /></div>
+      </div>
+
+      <div className="ps-two">
+        <div className="ps-panel">
+          <div className="ps-head"><h2>Top rated</h2><span className="ps-mono">{rated.length} of {beans.length} rated</span></div>
+          {topRated.length === 0 ? <p className="ps-none">No beans rated yet</p> : topRated.map(x => (
+            <div className="ps-row" key={x.bean.id}>
+              <div><b>{x.bean.name}</b><small>{sub(x)}</small></div>
+              <span className="ps-chip">★ {x.bean.my_rating}/5</span>
+            </div>
+          ))}
+        </div>
+        <div className="ps-panel">
+          <div className="ps-head"><h2>Rate these</h2><span className="ps-mono">Most drunk, not rated</span></div>
+          {toRate.length === 0 ? <p className="ps-none">Every bean you've drunk is rated</p> : toRate.map(x => (
+            <div className="ps-row" key={x.bean.id}>
+              <div><b>{x.bean.name}</b><small>{sub(x)}</small></div>
+              <div className="ps-rate">
+                {[1, 2, 3, 4, 5].map(n => <button type="button" key={n} aria-label={`Rate ${x.bean.name} ${n} of 5`} onClick={() => rate(x.bean, n)}><span /></button>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="ps-panel">
+        <div className="ps-head"><h2>Drink next</h2><span className="ps-mono">In stock, not drunk for a week or more</span></div>
+        {drinkNext.length === 0 ? <p className="ps-none">You're on top of everything in stock</p> : (
+          <div className="ps-next">
+            {drinkNext.map(x => (
+              <a key={x.bean.id} href={`/collection?bean=${x.bean.id}`}>
+                <i style={{ background: famOf(x.bean).tile }} />
+                <b>{x.bean.name}</b>
+                <small>{x.days === null ? "Never logged" : `Last cup ${lastDrunkLabel(x.days).toLowerCase()}`}</small>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="ps-foot"><HowBuilt /></div>
+    </div>
   );
 }

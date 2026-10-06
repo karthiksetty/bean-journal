@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { supabase } from "../lib/supabase-browser";
 import { FAM, TAG_DOTS, processFamily } from "../lib/poster";
+import HowBuilt from "../lib/HowBuilt";
 
 const TILES = ["#D2483A", "#D9A441", "#9DB0A8", "#A47B60"];
 
@@ -20,6 +21,7 @@ const css = `
   .pr-mono { font: 500 11px 'DM Mono', monospace; letter-spacing: .12em; text-transform: uppercase; }
   .pr-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: clamp(24px, 5vw, 56px) 20px; }
   .pr-frame { width: 100%; max-width: 720px; background: #F3ECDD; border: 12px solid #161210; box-shadow: 0 24px 50px rgba(22,18,16,.22); padding: clamp(18px, 4vw, 32px); animation: fadeIn .25s ease; }
+  .pr-foot { display: flex; justify-content: center; padding: 0 20px 28px; }
   .pr-progress { display: flex; align-items: center; gap: 6px; }
   .pr-progress i { width: 34px; height: 5px; display: block; background: #F3ECDD; outline: 1.5px solid #161210; }
   .pr-progress i.done { background: #161210; }
@@ -267,6 +269,7 @@ export default function RecommendPage() {
           />
         )}
       </main>
+      <footer className="pr-foot"><HowBuilt /></footer>
     </div>
   );
 }
