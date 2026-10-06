@@ -3,6 +3,7 @@ import { FAM, TAG_DOTS, processFamily } from "./lib/poster";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./lib/supabase-config";
 import HowBuilt from "./lib/HowBuilt";
 import ProcessChip from "./lib/ProcessChip";
+import Arrow from "./lib/Arrow";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ function dayLabel(iso) {
 
 function ExtLink({ href, className, children }) {
   if (!/^https?:\/\//i.test(href || "")) return <span className={className}>{children}</span>;
-  return <a className={className} href={href} target="_blank" rel="noopener noreferrer">{children} ↗</a>;
+  return <a className={className} href={href} target="_blank" rel="noopener noreferrer">{children}<Arrow /></a>;
 }
 
 function Tile({ cup }) {

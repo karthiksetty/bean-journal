@@ -1,6 +1,7 @@
 import { FAM } from "../lib/poster";
 import { PROCESS_INFO, PROCESS_ORDER } from "../lib/learn";
 import HowBuilt from "../lib/HowBuilt";
+import Arrow from "../lib/Arrow";
 
 export const metadata = {
   title: "Pour-over, explained · Setty's Bean Journal",
@@ -200,7 +201,7 @@ export default function LearnPage() {
             <span className="pe-mono">A shout-out · What I brew with</span>
             <h2>No time to master it? Meet the xBloom</h2>
             <p>I make most of my cups on an xBloom, a machine that brews pour-overs automatically. It grinds the beans and pours the water in stages, so every cup follows the recipe. If you don't have the time to master pouring by hand, this wonderful machine does the work for you.</p>
-            <a className="pe-go" href="https://xbloom.com" target="_blank" rel="noopener noreferrer">Visit xbloom.com ↗</a>
+            <a className="pe-go" href="https://xbloom.com" target="_blank" rel="noopener noreferrer">Visit xbloom.com<Arrow /></a>
             <small>Not sponsored. I just like it.</small>
           </div>
           <div className="pe-does">

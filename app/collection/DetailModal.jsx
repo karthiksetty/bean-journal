@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { FAM, TAG_DOTS, processFamily, lastDrunkLabel } from "../lib/poster";
+import Arrow from "../lib/Arrow";
 
 const css = `
   .pd-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(22,18,16,.6); backdrop-filter: blur(3px); }
@@ -150,7 +151,7 @@ export default function DetailModal({ bean, drinkLog, onClose, onEdit, onDelete,
             {hasWebsite && (
               <div className="pd-field wide">
                 <span className="pd-label">Website</span>
-                <a className="pd-link" href={bean.website} target="_blank" rel="noopener noreferrer">{bean.website.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "")} ↗</a>
+                <a className="pd-link" href={bean.website} target="_blank" rel="noopener noreferrer">{bean.website.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "")}<Arrow /></a>
               </div>
             )}
           </div>
