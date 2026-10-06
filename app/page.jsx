@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { FAM, TAG_DOTS, processFamily } from "./lib/poster";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./lib/supabase-config";
 import HowBuilt from "./lib/HowBuilt";
+import ProcessChip from "./lib/ProcessChip";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,9 @@ function Tile({ cup }) {
       <div className="pp-tile-shadow" />
       <div className="pp-tile-handle" />
       <div className="pp-tile-cup"><div style={{ background: `radial-gradient(circle at 42% 38%,${fam.cof[0]} 0 22%,${fam.cof[1]} 74%)` }} /></div>
-      <span className="pp-tile-proc">{cup.process || "Process not noted"}</span>
+      {cup.process
+        ? <ProcessChip process={cup.process} className="pp-tile-proc" />
+        : <span className="pp-tile-proc">Process not noted</span>}
     </div>
   );
 }
@@ -134,6 +137,9 @@ const css = `
   .pp-tile-cup div { position: absolute; inset: 11%; border-radius: 50%; }
   .pp-tile-proc { position: absolute; left: 12px; top: 12px; max-width: 80%; padding: 5px 9px; background: #F3ECDD; font: 500 10.5px/1.3 'DM Mono', monospace; letter-spacing: .04em; text-transform: uppercase; }
 
+  .pp .pp-strip { display: block; width: 100vw; margin: 52px 0 8px calc(50% - 50vw); padding: 14px 0 16px; overflow: hidden; background: #161210; color: #D9A441; transform: rotate(-1.5deg); }
+  .pp .pp-strip:hover { color: #F3ECDD; }
+  .pp-strip div { white-space: pre; font: 400 clamp(26px, 4vw, 44px)/1 var(--tf); letter-spacing: .06em; text-transform: uppercase; }
   .pp-section { display: flex; align-items: center; gap: 14px; margin: 44px 0 22px; }
   .pp-section h2 { font: 400 clamp(30px, 4vw, 46px)/1 var(--tf); letter-spacing: .05em; text-transform: uppercase; }
   .pp-section div { flex: 1; height: 3px; background: #161210; }
@@ -182,6 +188,9 @@ export default async function PublicPage() {
           ) : (
             <>
               <Hero cup={last} />
+              <a className="pp-strip" href="/learn" aria-label="What's a pour-over? Learn how it works">
+                <div aria-hidden="true">{Array(6).fill("What's a pour-over?  ✦  Learn how it works  →").join("  ✦  ")}</div>
+              </a>
               {rows.map(row => (
                 <section key={row.title}>
                   <div className="pp-section"><h2>{row.title}</h2><div />{row.cups.length > 4 && <span className="pp-mono">Scroll →</span>}</div>
