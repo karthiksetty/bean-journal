@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Bean Journal",
+  title: "Setty's Bean Journal",
   description: "A personal coffee bean database",
 };
 

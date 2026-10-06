@@ -55,7 +55,7 @@ const css = `
   .ps { min-height: 100vh; color: #161210; font-family: 'Space Grotesk', sans-serif; --tf: 'Righteous'; background: #E9E3D6 url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22180%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3CfeColorMatrix values=%220 0 0 0 0.1 0 0 0 0 0.07 0 0 0 0 0.05 0 0 0 0.22 0%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E'); }
   .ps button { cursor: pointer; font-family: 'Space Grotesk', sans-serif; }
   .ps-top { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 max(20px, calc((100% - 1180px) / 2)); background: #161210; color: #F3ECDD; }
-  .ps-top a { color: #F3ECDD; text-decoration: none; font: 400 clamp(20px, 5vw, 28px)/1 var(--tf); letter-spacing: .06em; text-transform: uppercase; }
+  .ps-top a { color: #F3ECDD; text-decoration: none; font: 400 clamp(14px, 3.9vw, 28px)/1 var(--tf); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
   .ps-top a:hover { color: #D9A441; }
   .ps-mono { font: 500 11px 'DM Mono', monospace; letter-spacing: .12em; text-transform: uppercase; }
   .ps-wrap { max-width: 1180px; margin: 0 auto; padding: clamp(24px, 4vw, 48px) 20px 80px; }
@@ -177,7 +177,7 @@ export default function StatsPage() {
   const frame = content => (
     <div className="ps">
       <style>{css}</style>
-      <header className="ps-top"><a href="/collection">Bean Journal</a><span className="ps-mono">Stats</span></header>
+      <header className="ps-top"><a href="/collection">Setty's Bean Journal</a><span className="ps-mono">Stats</span></header>
       {content}
     </div>
   );

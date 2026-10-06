@@ -70,7 +70,7 @@ export default function LoginPage() {
             <div className="pl-cup"><div className="pl-cup-handle" /><div className="pl-cup-body"><div /></div></div>
           </div>
           <div className="pl-body">
-            <h1>Bean Journal</h1>
+            <h1>Setty's Bean Journal</h1>
             <p className="pl-sub">Sign in to your collection</p>
 
             {sent ? (
@@ -90,7 +90,7 @@ export default function LoginPage() {
             )}
           </div>
         </div>
-        <a className="pl-back" href="/">← Back to Bean Journal</a>
+        <a className="pl-back" href="/">← Back to Setty's Bean Journal</a>
         <HowBuilt />
       </div>
     </>

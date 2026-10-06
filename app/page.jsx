@@ -112,7 +112,6 @@ const css = `
   .pp-top { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 22px; }
   .pp-brand { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
   .pp-top h1 { font: 400 clamp(26px, 4vw, 40px)/1 var(--tf); letter-spacing: .05em; text-transform: uppercase; }
-  .pp-top a { font: 700 15px 'Space Grotesk', sans-serif; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
 
   .pp-hero { background: #F3ECDD; border: 12px solid #161210; box-shadow: 0 24px 50px rgba(22,18,16,.22); padding: clamp(18px, 3vw, 34px); display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(18px, 3vw, 36px); align-items: start; }
   .pp-chip { display: inline-block; padding: 6px 10px; background: #161210; color: #F3ECDD; font: 500 11px 'DM Mono', monospace; letter-spacing: .1em; text-transform: uppercase; }
@@ -148,7 +147,8 @@ const css = `
   .pp-info { display: flex; flex-direction: column; gap: 7px; padding: 12px 0; }
   .pp-card .pp-field, .pp-card .pp-note { font-size: 13px; }
   .pp-foot { margin-top: auto; padding-top: 10px; border-top: 2px solid #161210; font: 500 11.5px 'DM Mono', monospace; }
-  .pp-foot-links { display: flex; justify-content: flex-end; margin-top: 40px; }
+  .pp-foot-links { display: flex; justify-content: flex-end; align-items: baseline; flex-wrap: wrap; gap: 8px 24px; margin-top: 40px; }
+  .pp .pp-foot-links a { font: 500 12px 'DM Mono', monospace; letter-spacing: .06em; text-decoration: underline; text-underline-offset: 4px; }
   .pp-empty { padding: 60px 0; text-align: center; font: 400 clamp(26px, 4vw, 44px)/1 var(--tf); letter-spacing: .04em; text-transform: uppercase; }
 
   @media (max-width: 760px) {
@@ -175,7 +175,6 @@ export default async function PublicPage() {
               <h1>Setty's Bean Journal</h1>
               <span className="pp-mono">Ready, Setty, Brew</span>
             </div>
-            <a href="/collection">My collection</a>
           </div>
           {!last ? (
             <div className="pp-empty">No cups logged yet</div>
@@ -192,7 +191,7 @@ export default async function PublicPage() {
               ))}
             </>
           )}
-          <div className="pp-foot-links"><HowBuilt /></div>
+          <div className="pp-foot-links"><a href="/collection">My collection</a><HowBuilt /></div>
         </div>
       </div>
     </>
