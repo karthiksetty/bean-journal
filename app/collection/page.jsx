@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase-browser";
 import { FAM, TAG_DOTS, processFamily, lastDrunkLabel } from "../lib/poster";
 import DetailModal from "./DetailModal";
@@ -102,6 +102,24 @@ export default function BeanDatabase() {
   };
 
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Browsers without scroll-driven animations (or with reduced motion on) get the same
+  // top bar and progress line from a scroll listener instead.
+  const barRef = useRef(null);
+  useEffect(() => {
+    const cssDriven = CSS.supports("animation-timeline: view()") && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const bar = barRef.current;
+    if (cssDriven || !bar) return;
+    const onScroll = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      bar.classList.toggle("show", window.scrollY > 470);
+      bar.style.setProperty("--progress", max > 0 ? Math.min(1, window.scrollY / max) : 0);
+    };
+    bar.classList.add("scripted");
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const toggleFiltersOpen = () => {
     setFiltersOpen(prev => {
@@ -248,6 +266,10 @@ export default function BeanDatabase() {
         .pj-bar-add { height: 44px; padding: 0 18px; border: none; background: #D9A441; color: #161210; font: 700 15px 'Space Grotesk', sans-serif; white-space: nowrap; }
         .pj-bar-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: linear-gradient(90deg, #D2483A 0 17%, #D9A441 0 34%, #9DB0A8 0 51%, #A47B60 0 68%, #D9A99B 0 85%, #5A2A22 0); transform-origin: left; }
 
+        .pj-bar.scripted { display: flex; visibility: hidden; opacity: 0; transform: translateY(-100%); transition: transform .2s, opacity .2s, visibility 0s .2s; }
+        .pj-bar.scripted.show { visibility: visible; opacity: 1; transform: none; transition: transform .2s, opacity .2s; }
+        .pj-bar.scripted .pj-bar-progress { transform: scaleX(var(--progress, 0)); }
+
         .pj-wrap { max-width: 1180px; margin: 0 auto; padding: clamp(24px, 5vw, 56px) 20px 0; }
         .pj-hero { background: #F3ECDD; border: var(--fw, 14px) solid #161210; box-shadow: 0 24px 50px rgba(22,18,16,.22); padding: clamp(18px, 3vw, 34px); }
         .pj-hero-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 28px; transform-origin: left bottom; }
@@ -393,7 +415,7 @@ export default function BeanDatabase() {
       `}</style>
 
       <div className="pj">
-        <div className="pj-bar">
+        <div className="pj-bar" ref={barRef}>
           <span className="pj-bar-title">Bean Journal</span>
           <span className="pj-bar-count">{availableCount} / {beans.length}</span>
           <span style={{ flex: 1 }} />
