@@ -4,8 +4,8 @@ import { FAM, processFamily } from "./poster";
 import { PROCESS_INFO, DARK_TILES } from "./learn";
 
 const css = `
-  .pc-chip { cursor: pointer; border: none; text-align: left; text-decoration: underline dotted; text-underline-offset: 3px; }
-  .pc-chip:hover { background: #161210 !important; color: #F3ECDD !important; }
+  .pc-chip { cursor: pointer; border: none; border-radius: 0; margin: 0; -webkit-appearance: none; appearance: none; color: #161210; text-align: left; text-decoration: underline dotted; text-underline-offset: 3px; }
+  @media (hover: hover) { .pc-chip:hover { background: #161210 !important; color: #F3ECDD !important; } }
   .pc-overlay { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(22,18,16,.6); backdrop-filter: blur(3px); }
   .pc { width: 100%; max-width: 440px; background: #F3ECDD; border: 10px solid #161210; box-shadow: 0 24px 60px rgba(22,18,16,.4); color: #161210; font-family: 'Space Grotesk', sans-serif; text-transform: none; letter-spacing: normal; }
   .pc-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 3px solid #161210; }
