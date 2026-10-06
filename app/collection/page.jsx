@@ -286,6 +286,7 @@ export default function BeanDatabase() {
         .pj-link { height: 52px; padding: 0 6px; display: inline-flex; align-items: center; border: none; background: none; color: #161210; font: 700 15px 'Space Grotesk', sans-serif; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
         .pj-link:hover { color: #D2483A; }
 
+        .pj-spacer { flex: 1; }
         .pj-controls { display: flex; flex-direction: column; gap: 16px; margin-top: 36px; }
         .pj-search { display: flex; align-items: center; gap: 14px; background: #F3ECDD; border: 3px solid #161210; padding: 0 22px; }
         .pj-search span { font: 800 22px var(--tf); letter-spacing: .06em; }
@@ -356,6 +357,12 @@ export default function BeanDatabase() {
         @media (max-width: 480px) {
           .pj-art { --ring: calc(var(--h) - 90px); --cy: 38%; }
           .pj-title { font-size: 15vw; }
+          .pj-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .pj-actions .pj-btn { justify-content: center; padding: 0 10px; }
+          .pj-actions .pj-btn-dark { grid-column: 1 / -1; }
+          .pj-actions .pj-spacer { display: none; }
+          .pj-actions .pj-link { height: 40px; justify-self: start; }
+          .pj-actions .pj-link:last-child { justify-self: end; }
           .pj-bar-title { font-size: 22px; }
           .pj-bar:has(.pj-bar-add) .pj-bar-count { display: none; }
           .pj-stats { grid-template-columns: 1fr 1fr; }
@@ -432,7 +439,7 @@ export default function BeanDatabase() {
               {session && <button type="button" className="pj-btn pj-btn-dark" onClick={() => setShowAddForm(true)}>+ Add Bean</button>}
               <a href="/stats" className="pj-btn pj-btn-gold">Stats</a>
               <a href="/recommend" className="pj-btn pj-btn-sage">Find My Bean</a>
-              <span style={{ flex: 1 }} />
+              <span className="pj-spacer" />
               <a href="/" className="pj-link">Public page</a>
               {session
                 ? <button type="button" className="pj-link" onClick={() => supabase.auth.signOut().then(() => { window.location.href = "/"; })}>Sign out</button>
