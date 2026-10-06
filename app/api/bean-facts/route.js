@@ -1,6 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { ownerClient, forbidden } from "../../lib/supabase-server";
 
 export async function POST(request) {
+  if (!(await ownerClient())) return forbidden();
+
   const { bean } = await request.json();
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });

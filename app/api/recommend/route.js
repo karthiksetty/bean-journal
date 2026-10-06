@@ -1,12 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  "https://uumvzroswrgqmaeoqajc.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1bXZ6cm9zd3JncW1hZW9xYWpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODAwMDksImV4cCI6MjA4ODY1NjAwOX0.IPfyrSTzVa8gVjAj1wk8KUwDd19_RzBonXOLXxofw0I"
-);
+import { ownerClient, forbidden } from "../../lib/supabase-server";
 
 export async function POST(request) {
+  const supabase = await ownerClient();
+  if (!supabase) return forbidden();
+
   const { timeOfDay, flavorMood, intensity } = await request.json();
 
   const { data: allBeans, error } = await supabase

@@ -1,12 +1,8 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase-browser";
 
-const supabase = createClient(
-  "https://uumvzroswrgqmaeoqajc.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1bXZ6cm9zd3JncW1hZW9xYWpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODAwMDksImV4cCI6MjA4ODY1NjAwOX0.IPfyrSTzVa8gVjAj1wk8KUwDd19_RzBonXOLXxofw0I"
-);
 
 const processColors = {
   "Washed":                   { bg: "#E8F0EC", text: "#3A6B52", dot: "#3A6B52" },
@@ -272,7 +268,7 @@ export default function RecommendPage() {
 
       {/* Header */}
       <header style={{ padding: "20px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #EDE5D8", background: "#FEFCF8" }}>
-        <Link href="/" style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", fontWeight: 700, color: "#2C1810", textDecoration: "none", letterSpacing: "-0.3px" }}>
+        <Link href="/collection" style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", fontWeight: 700, color: "#2C1810", textDecoration: "none", letterSpacing: "-0.3px" }}>
           Bean Journal
         </Link>
         <span style={{ fontSize: "12px", color: "#9B8B7A", fontWeight: 600, letterSpacing: "1px", textTransform: "uppercase" }}>
@@ -410,7 +406,7 @@ function ResultView({ loading, bean, text, done, answers, onRestart }) {
             onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
             onMouseLeave={e => e.currentTarget.style.opacity = "1"}
           >Try Again</button>
-          <Link href="/"
+          <Link href="/collection"
             style={{ background: "transparent", color: "#2C1810", border: "1.5px solid #EDE5D8", borderRadius: "12px", padding: "12px 24px", fontSize: "14px", fontWeight: 600, textDecoration: "none", fontFamily: "'DM Sans', sans-serif", display: "inline-block", transition: "border-color 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.borderColor = "#C4A882"}
             onMouseLeave={e => e.currentTarget.style.borderColor = "#EDE5D8"}

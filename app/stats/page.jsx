@@ -1,11 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase-browser";
 
-const supabase = createClient(
-  "https://uumvzroswrgqmaeoqajc.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1bXZ6cm9zd3JncW1hZW9xYWpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODAwMDksImV4cCI6MjA4ODY1NjAwOX0.IPfyrSTzVa8gVjAj1wk8KUwDd19_RzBonXOLXxofw0I"
-);
 
 const PROCESS_COLORS = {
   "Washed":                  "#3A6B52",
@@ -229,7 +225,7 @@ export default function StatsPage() {
         {/* Header */}
         <div style={{ background: "#FEFCF8", borderBottom: "1px solid #EDE5D8", padding: "24px 40px", position: "sticky", top: 0, zIndex: 10 }}>
           <div style={{ maxWidth: "680px", margin: "0 auto", display: "flex", alignItems: "center", gap: 12 }}>
-            <a href="/" style={{ textDecoration: "none", color: "#A0896B", fontSize: 13, fontWeight: 500 }}>← Beans</a>
+            <a href="/collection" style={{ textDecoration: "none", color: "#A0896B", fontSize: 13, fontWeight: 500 }}>← Beans</a>
             <span style={{ color: "#EDE5D8" }}>|</span>
             <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700 }}>Stats</span>
           </div>
