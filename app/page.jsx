@@ -57,7 +57,7 @@ function Hero({ cup }) {
   return (
     <div className="pp-hero">
       <div className="pp-hero-main">
-        <span className="pp-chip">Last cup · {dayLabel(cup.drunk_at)}</span>
+        <span className="pp-chip">My latest cup · {dayLabel(cup.drunk_at)}</span>
         <h2 className="pp-hero-name" style={{ "--w": Math.max(...cup.coffee_name.split(/\s+/).map(w => w.length)) }}><ExtLink href={cup.coffee_website}>{cup.coffee_name}</ExtLink></h2>
         {cup.roaster && <div className="pp-hero-by">by {cup.roaster}</div>}
         {atCafe ? (
@@ -141,7 +141,10 @@ const css = `
   .pp .pp-strip { display: block; width: 100vw; margin: 52px 0 8px calc(50% - 50vw); padding: 14px 0 16px; overflow: hidden; background: #161210; color: #D9A441; transform: rotate(-1.5deg); }
   .pp .pp-strip:hover { color: #F3ECDD; }
   .pp-strip div { white-space: pre; font: 400 clamp(26px, 4vw, 44px)/1 var(--tf); letter-spacing: .06em; text-transform: uppercase; }
-  .pp-section { display: flex; align-items: center; gap: 14px; margin: 44px 0 22px; }
+  .pp-section { display: flex; align-items: center; gap: 14px; margin: 44px 0 8px; }
+  .pp-section-sub { margin-bottom: 20px; }
+  .pp-lede { margin-top: 40px; font: 400 clamp(18px, 2.2vw, 24px)/1.4 'Space Grotesk', sans-serif; }
+  .pp-lede + section .pp-section { margin-top: 22px; }
   .pp-section h2 { font: 400 clamp(30px, 4vw, 46px)/1 var(--tf); letter-spacing: .05em; text-transform: uppercase; }
   .pp-section div { flex: 1; height: 3px; background: #161210; }
 
@@ -169,8 +172,8 @@ export default async function PublicPage() {
   const { data } = await supabase.from("recent_cups").select("*").order("drunk_at", { ascending: false });
   const [last, ...rest] = data || [];
   const rows = [
-    { title: "At cafés", cups: rest.filter(cup => cup.place === "cafe") },
-    { title: "At home", cups: rest.filter(cup => cup.place !== "cafe") },
+    { title: "At cafés", sub: "Coffees I've had out", cups: rest.filter(cup => cup.place === "cafe") },
+    { title: "At home", sub: "Beans I've brewed at home", cups: rest.filter(cup => cup.place !== "cafe") },
   ].filter(row => row.cups.length > 0);
 
   return (
@@ -192,9 +195,11 @@ export default async function PublicPage() {
               <a className="pp-strip" href="/learn" aria-label="What's a pour-over? Learn how it works">
                 <div aria-hidden="true">{Array(6).fill("What's a pour-over?  ✦  Learn how it works  →").join("  ✦  ")}</div>
               </a>
+              <p className="pp-lede">The coffees I'm drinking, one cup at a time.</p>
               {rows.map(row => (
                 <section key={row.title}>
                   <div className="pp-section"><h2>{row.title}</h2><div />{row.cups.length > 4 && <span className="pp-mono">Scroll →</span>}</div>
+                  <p className="pp-section-sub pp-mono">{row.sub}</p>
                   <div className="pp-row">
                     {row.cups.map(cup => <Card key={`${cup.cafe_name || ""}-${cup.coffee_name}`} cup={cup} />)}
                   </div>
