@@ -14,7 +14,7 @@ function CallbackHandler() {
   }, []);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FAF7F2", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", color: "#A0896B", fontSize: "14px" }}>
+    <div style={{ minHeight: "100vh", background: "#E9E3D6", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Mono', monospace", fontSize: "13px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#161210" }}>
       Signing you in…
     </div>
   );
