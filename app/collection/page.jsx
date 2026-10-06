@@ -103,19 +103,15 @@ export default function BeanDatabase() {
 
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Browsers without scroll-driven animations (or with reduced motion on) get the same
-  // top bar and progress line from a scroll listener instead.
+  // The top bar and its progress line follow the scroll position in every browser.
   const barRef = useRef(null);
   useEffect(() => {
-    const cssDriven = CSS.supports("animation-timeline: view()") && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const bar = barRef.current;
-    if (cssDriven || !bar) return;
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight;
       bar.classList.toggle("show", window.scrollY > 470);
       bar.style.setProperty("--progress", max > 0 ? Math.min(1, window.scrollY / max) : 0);
     };
-    bar.classList.add("scripted");
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -260,15 +256,13 @@ export default function BeanDatabase() {
         .pj button { cursor: pointer; }
         .pj input::placeholder { color: #161210; opacity: .5; }
 
-        .pj-bar { position: sticky; top: 0; z-index: 20; height: 64px; margin-bottom: -64px; background: #161210; color: #F3ECDD; display: none; align-items: center; gap: 16px; padding: 0 max(20px, calc((100% - 1180px) / 2)); }
+        .pj-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 20; height: 64px; background: #161210; color: #F3ECDD; display: flex; visibility: hidden; opacity: 0; transform: translateY(-100%); transition: transform .2s, opacity .2s, visibility 0s .2s; align-items: center; gap: 16px; padding: 0 max(20px, calc((100% - 1180px) / 2)); }
         .pj-bar-title { font: 800 30px/1 var(--tf); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
         .pj-bar-count { font: 500 12px 'DM Mono', monospace; border: 1.5px solid #F3ECDD; padding: 4px 8px; white-space: nowrap; }
         .pj-bar-add { height: 44px; padding: 0 18px; border: none; background: #D9A441; color: #161210; font: 700 15px 'Space Grotesk', sans-serif; white-space: nowrap; }
-        .pj-bar-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: linear-gradient(90deg, #D2483A 0 17%, #D9A441 0 34%, #9DB0A8 0 51%, #A47B60 0 68%, #D9A99B 0 85%, #5A2A22 0); transform-origin: left; }
+        .pj-bar-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: linear-gradient(90deg, #D2483A 0 17%, #D9A441 0 34%, #9DB0A8 0 51%, #A47B60 0 68%, #D9A99B 0 85%, #5A2A22 0); transform-origin: left; transform: scaleX(var(--progress, 0)); }
 
-        .pj-bar.scripted { display: flex; visibility: hidden; opacity: 0; transform: translateY(-100%); transition: transform .2s, opacity .2s, visibility 0s .2s; }
-        .pj-bar.scripted.show { visibility: visible; opacity: 1; transform: none; transition: transform .2s, opacity .2s; }
-        .pj-bar.scripted .pj-bar-progress { transform: scaleX(var(--progress, 0)); }
+        .pj-bar.show { visibility: visible; opacity: 1; transform: none; transition: transform .2s, opacity .2s; }
 
         .pj-wrap { max-width: 1180px; margin: 0 auto; padding: clamp(24px, 5vw, 56px) 20px 0; }
         .pj-hero { background: #F3ECDD; border: var(--fw, 14px) solid #161210; box-shadow: 0 24px 50px rgba(22,18,16,.22); padding: clamp(18px, 3vw, 34px); }
@@ -392,8 +386,6 @@ export default function BeanDatabase() {
 
         @keyframes bjspin { to { transform: rotate(360deg); } }
         @keyframes bjrise { from { opacity: 0; transform: translateY(110px) rotate(-3deg) scale(.94); } to { opacity: var(--op, 1); transform: none; } }
-        @keyframes bjbar { from { opacity: 0; transform: translateY(-100%); visibility: hidden; } to { opacity: 1; transform: none; visibility: visible; } }
-        @keyframes bjfill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
         @keyframes bjpar { to { transform: translateY(-40px) scale(.9); opacity: 0; } }
         @keyframes bjslide { from { transform: translateX(0); } to { transform: translateX(-45%); } }
         @keyframes bjpop { from { opacity: 0; transform: scale(.4) rotate(-25deg); } to { opacity: 1; transform: none; } }
@@ -401,8 +393,6 @@ export default function BeanDatabase() {
         @keyframes bjcup { from { transform: rotate(-120deg) scale(.7); } to { transform: none; } }
         @media (prefers-reduced-motion: no-preference) {
           @supports (animation-timeline: view()) {
-            .pj-bar { display: flex; animation: bjbar linear both; animation-timeline: scroll(root); animation-range: 420px 520px; }
-            .pj-bar-progress { animation: bjfill linear both; animation-timeline: scroll(root); }
             .pj-hero-top { animation: bjpar linear both; animation-timeline: scroll(root); animation-range: 0 360px; }
             .pj-ring { animation: bjspin linear both; animation-timeline: scroll(root); }
             .pj-marquee div { animation: bjslide linear both; animation-timeline: scroll(root); }
