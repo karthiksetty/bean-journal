@@ -18,3 +18,10 @@ export function processFamily(process) {
   if (p.includes("washed")) return "washed";
   return "natural";
 }
+
+export function lastDrunkLabel(days) {
+  if (days === null) return null;
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  return `${days}d ago`;
+}
