@@ -259,7 +259,8 @@ export default function BeanDatabase() {
         .pj-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 20; height: 64px; background: #161210; color: #F3ECDD; display: flex; visibility: hidden; opacity: 0; transform: translateY(-100%); transition: transform .2s, opacity .2s, visibility 0s .2s; align-items: center; gap: 16px; padding: 0 max(20px, calc((100% - 1180px) / 2)); }
         .pj-bar-title { font: 800 30px/1 var(--tf); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
         .pj-bar-count { font: 500 12px 'DM Mono', monospace; border: 1.5px solid #F3ECDD; padding: 4px 8px; white-space: nowrap; }
-        .pj-bar-add { height: 44px; padding: 0 18px; border: none; background: #D9A441; color: #161210; font: 700 15px 'Space Grotesk', sans-serif; white-space: nowrap; }
+        .pj-bar-btn { height: 44px; padding: 0 18px; display: inline-flex; align-items: center; background: #D9A441; color: #161210; font: 700 15px 'Space Grotesk', sans-serif; text-decoration: none; white-space: nowrap; }
+        .pj-bar-btn:hover { background: #F3ECDD; }
         .pj-bar-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: linear-gradient(90deg, #D2483A 0 17%, #D9A441 0 34%, #9DB0A8 0 51%, #A47B60 0 68%, #D9A99B 0 85%, #5A2A22 0); transform-origin: left; transform: scaleX(var(--progress, 0)); }
 
         .pj-bar.show { visibility: visible; opacity: 1; transform: none; transition: transform .2s, opacity .2s; }
@@ -268,6 +269,7 @@ export default function BeanDatabase() {
         .pj-hero { background: #F3ECDD; border: var(--fw, 14px) solid #161210; box-shadow: 0 24px 50px rgba(22,18,16,.22); padding: clamp(18px, 3vw, 34px); }
         .pj-hero-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 28px; transform-origin: left bottom; }
         .pj-title { font: 900 clamp(64px, 11vw, 148px)/0.84 var(--tf); letter-spacing: .03em; text-transform: uppercase; }
+        .pj-title span { display: block; margin-bottom: .35em; font-size: .3em; line-height: 1; letter-spacing: .06em; }
         .pj-count { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; padding-bottom: 6px; }
         .pj-count-num { font: 800 clamp(34px, 4vw, 52px)/0.9 var(--tf); }
         .pj-count-num span { opacity: .45; }
@@ -302,7 +304,7 @@ export default function BeanDatabase() {
         .pj-link { height: 52px; padding: 0 6px; display: inline-flex; align-items: center; border: none; background: none; color: #161210; font: 700 15px 'Space Grotesk', sans-serif; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
         .pj-link:hover { color: #D2483A; }
 
-        .pj-spacer { flex: 1; }
+        .pj-links { display: flex; gap: 10px; margin-left: auto; }
         .pj-controls { display: flex; flex-direction: column; gap: 16px; margin-top: 36px; }
         .pj-search { display: flex; align-items: center; gap: 14px; background: #F3ECDD; border: 3px solid #161210; padding: 0 22px; }
         .pj-search span { font: 800 22px var(--tf); letter-spacing: .06em; }
@@ -375,12 +377,11 @@ export default function BeanDatabase() {
           .pj-title { font-size: 15vw; }
           .pj-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .pj-actions .pj-btn { justify-content: center; padding: 0 10px; }
-          .pj-actions .pj-btn-dark { grid-column: 1 / -1; }
-          .pj-actions .pj-spacer { display: none; }
-          .pj-actions .pj-link { height: 40px; justify-self: start; }
-          .pj-actions .pj-link:last-child { justify-self: end; }
-          .pj-bar-title { font-size: 22px; }
-          .pj-bar:has(.pj-bar-add) .pj-bar-count { display: none; }
+          .pj-actions .pj-btn-gold { grid-column: 1 / -1; }
+          .pj-links { grid-column: 1 / -1; justify-content: space-between; margin-left: 0; }
+          .pj-links .pj-link { height: 40px; }
+          .pj-bar-title { font-size: 18px; }
+          .pj-bar-count { display: none; }
           .pj-stats { grid-template-columns: 1fr 1fr; }
         }
 
@@ -406,17 +407,17 @@ export default function BeanDatabase() {
 
       <div className="pj">
         <div className="pj-bar" ref={barRef}>
-          <span className="pj-bar-title">Bean Journal</span>
+          <span className="pj-bar-title">Setty's Bean Journal</span>
           <span className="pj-bar-count">{availableCount} / {beans.length}</span>
           <span style={{ flex: 1 }} />
-          {session && <button type="button" className="pj-bar-add" onClick={() => setShowAddForm(true)}>+ Add Bean</button>}
+          <a href="/stats" className="pj-bar-btn">Stats</a>
           <div className="pj-bar-progress" />
         </div>
 
         <div className="pj-wrap">
           <div className="pj-hero">
             <div className="pj-hero-top">
-              <h1 className="pj-title">Bean Journal</h1>
+              <h1 className="pj-title"><span>Setty's</span>Bean Journal</h1>
               <div className="pj-count">
                 <span className="pj-count-num">{availableCount}<span>/{beans.length}</span></span>
                 <div className="pj-count-bars"><i /><i /><i /></div>
@@ -429,7 +430,7 @@ export default function BeanDatabase() {
                 <div className="pj-ring">
                   <svg viewBox="0 0 200 200" aria-hidden="true">
                     <path id="heroRing" d="M100,100 m-92,0 a92,92 0 1,1 184,0 a92,92 0 1,1 -184,0" fill="none" />
-                    <text><textPath href="#heroRing" textLength="575" lengthAdjust="spacing">✦ BEAN JOURNAL ✦ FRESH ROASTS ✦ CUP AFTER CUP ✦ GOOD BEANS ONLY </textPath></text>
+                    <text><textPath href="#heroRing" textLength="575" lengthAdjust="spacing">✦ READY, SETTY, BREW ✦ GRIND ✦ BLOOM ✦ POUR ✦ SIP ✦ REPEAT </textPath></text>
                   </svg>
                 </div>
               </div>
@@ -448,14 +449,15 @@ export default function BeanDatabase() {
               </div>
             </div>
             <div className="pj-actions">
-              {session && <button type="button" className="pj-btn pj-btn-dark" onClick={() => setShowAddForm(true)}>+ Add Bean</button>}
               <a href="/stats" className="pj-btn pj-btn-gold">Stats</a>
+              {session && <button type="button" className="pj-btn pj-btn-dark" onClick={() => setShowAddForm(true)}>+ Add Bean</button>}
               <a href="/recommend" className="pj-btn pj-btn-sage">Find My Bean</a>
-              <span className="pj-spacer" />
-              <a href="/" className="pj-link">Public page</a>
-              {session
-                ? <button type="button" className="pj-link" onClick={() => supabase.auth.signOut().then(() => { window.location.href = "/"; })}>Sign out</button>
-                : <a href="/login" className="pj-link">Sign in</a>}
+              <div className="pj-links">
+                <a href="/" className="pj-link">Public page</a>
+                {session
+                  ? <button type="button" className="pj-link" onClick={() => supabase.auth.signOut().then(() => { window.location.href = "/"; })}>Sign out</button>
+                  : <a href="/login" className="pj-link">Sign in</a>}
+              </div>
             </div>
           </div>
 
@@ -495,7 +497,7 @@ export default function BeanDatabase() {
           </div>
         </div>
 
-        <div className="pj-marquee"><div>{marquee || "Bean Journal  ✦  Good beans only  ✦  Bean Journal  ✦  Good beans only"}</div></div>
+        <div className="pj-marquee"><div>{marquee || "Ready, Setty, Brew  ✦  Good beans only  ✦  Ready, Setty, Brew  ✦  Good beans only"}</div></div>
 
         {loading ? (
           <div className="pj-empty">Loading your beans…</div>
