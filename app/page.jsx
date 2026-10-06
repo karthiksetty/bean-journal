@@ -5,6 +5,11 @@ import HowBuilt from "./lib/HowBuilt";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Setty's Bean Journal",
+  description: "The latest cups from Setty's coffee journal, at home and in cafés.",
+};
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const TIME_ZONE = "Europe/Berlin";
@@ -104,8 +109,9 @@ const css = `
   .pp-mono { font: 500 11px 'DM Mono', monospace; letter-spacing: .12em; text-transform: uppercase; }
   .pp-label { align-self: flex-start; padding: 1px 5px; background: #161210; color: #F3ECDD; font: 500 9.5px 'DM Mono', monospace; letter-spacing: .12em; }
 
-  .pp-top { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
-  .pp-top h1 { flex: 1; font: 400 clamp(26px, 4vw, 40px)/1 var(--tf); letter-spacing: .05em; text-transform: uppercase; }
+  .pp-top { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 22px; }
+  .pp-brand { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .pp-top h1 { font: 400 clamp(26px, 4vw, 40px)/1 var(--tf); letter-spacing: .05em; text-transform: uppercase; }
   .pp-top a { font: 700 15px 'Space Grotesk', sans-serif; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
 
   .pp-hero { background: #F3ECDD; border: 12px solid #161210; box-shadow: 0 24px 50px rgba(22,18,16,.22); padding: clamp(18px, 3vw, 34px); display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(18px, 3vw, 36px); align-items: start; }
@@ -165,7 +171,10 @@ export default async function PublicPage() {
       <div className="pp">
         <div className="pp-wrap">
           <div className="pp-top">
-            <h1>Bean Journal</h1>
+            <div className="pp-brand">
+              <h1>Setty's Bean Journal</h1>
+              <span className="pp-mono">Ready, Setty, Brew</span>
+            </div>
             <a href="/collection">My collection</a>
           </div>
           {!last ? (
